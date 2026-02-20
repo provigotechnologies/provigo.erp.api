@@ -1,0 +1,6 @@
+@MasterService_HostAddress = http://localhost:5235
+
+GET {{MasterService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

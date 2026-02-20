@@ -1,0 +1,76 @@
+﻿using ProviGo.Common.Models;
+
+namespace OrderService.Services.Internal
+{
+    public static class OrderCalculation
+    {
+        public static void BuildAndCalculate(
+     List<(int ProductId, decimal Quantity, decimal UnitPrice)> rawItems,
+     List<Discount> discountsFromDb,
+     List<Tax> taxesFromDb,
+     List<Charge> chargesFromDb,
+     out List<OrderItem> orderItems,
+     out List<OrderDiscount> orderDiscounts,
+     out List<OrderTax> orderTaxes,
+     out List<OrderCharge> orderCharges,
+     out decimal subTotal,
+     out decimal discountTotal,
+     out decimal taxTotal,
+     out decimal chargeTotal,
+     out decimal grandTotal)
+        {
+            // 1️⃣ Build order items
+            var tempOrderItems = rawItems.Select(r => new OrderItem
+            {
+                ProductId = r.ProductId,
+                Quantity = r.Quantity,
+                UnitPrice = r.UnitPrice,
+                TotalPrice = r.Quantity * r.UnitPrice
+            }).ToList();
+
+            // 2️⃣ Calculate subtotal
+            decimal tempSubTotal = tempOrderItems.Sum(i => i.TotalPrice);
+
+            // 3️⃣ Discounts
+            var tempOrderDiscounts = discountsFromDb.Select(d => new OrderDiscount
+            {
+                DiscountId = d.DiscountId,
+                DiscountAmount = d.Value
+            }).ToList();
+            decimal tempDiscountTotal = tempOrderDiscounts.Sum(d => d.DiscountAmount);
+
+            // 4️⃣ Taxes (apply on subtotal)
+            var tempOrderTaxes = taxesFromDb.Select(t => new OrderTax
+            {
+                TaxId = t.TaxId,
+                TaxAmount = tempSubTotal * t.Rate / 100
+            }).ToList();
+            decimal tempTaxTotal = tempOrderTaxes.Sum(t => t.TaxAmount);
+
+            // 5️⃣ Charges
+            var tempOrderCharges = chargesFromDb.Select(c => new OrderCharge
+            {
+                ChargeId = c.ChargeId,
+                ChargeAmount = c.Value
+            }).ToList();
+            decimal tempChargeTotal = tempOrderCharges.Sum(c => c.ChargeAmount);
+
+            // 6️⃣ Grand total (subtotal + tax + charge - discount)
+            decimal tempGrandTotal = tempSubTotal + tempTaxTotal + tempChargeTotal - tempDiscountTotal;
+
+            // ✅ Assign to out parameters
+            orderItems = tempOrderItems;
+            orderDiscounts = tempOrderDiscounts;
+            orderTaxes = tempOrderTaxes;
+            orderCharges = tempOrderCharges;
+            subTotal = tempSubTotal;
+            discountTotal = tempDiscountTotal;
+            taxTotal = tempTaxTotal;
+            chargeTotal = tempChargeTotal;
+            grandTotal = tempGrandTotal;
+
+        }
+
+
+    }
+}
