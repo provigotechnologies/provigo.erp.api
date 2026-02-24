@@ -10,11 +10,14 @@ namespace ProviGo.Common.Models
         public int RefundId { get; set; }
         public Guid TenantId { get; set; }
         public int PaymentId { get; set; }
+        public int OrderId { get; set; }
+        public string Mode { get; set; } = "OFFLINE";
 
         public decimal RefundAmount { get; set; }
         public string Reason { get; set; }
         public string Status { get; set; } // Initiated, Completed
 
+        public string? GatewayRefundId { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
 

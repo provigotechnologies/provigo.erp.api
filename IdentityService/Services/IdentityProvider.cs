@@ -1,5 +1,4 @@
-﻿
-using ProviGo.Common.Models;
+﻿using ProviGo.Common.Models;
 
 namespace IdentityService.Services;
 public interface IIdentityProvider

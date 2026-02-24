@@ -12,22 +12,18 @@ namespace ProductService.Services.Implementation
 {
     public class ProductService(
     TenantDbContext db,
-    IGenericRepository<Product> repo,
-    IIdentityProvider identityProvider) : IProductService
+    IGenericRepository<Product> repo) : IProductService
     {
         private readonly TenantDbContext _db = db;
         private readonly IGenericRepository<Product> _repo = repo;
-        private readonly IIdentityProvider _identityProvider = identityProvider;
-        private Guid TenantId => _identityProvider.TenantId;
 
-
-        public async Task<ApiResponse<ProductDto>> CreateProductAsync(ProductCreateDto dto)
+        public async Task<ApiResponse<ProductDto>> CreateProductAsync(ProductCreateDto dto, Guid tenantId)
         {
             try
             {
 
                 var exists = await _db.Products
-                    .AnyAsync(p => p.TenantId == TenantId && p.ProductName == dto.ProductName);
+                    .AnyAsync(p => p.TenantId == tenantId && p.ProductName == dto.ProductName);
 
                 if (exists)
                 {
@@ -39,7 +35,8 @@ namespace ProductService.Services.Implementation
                 // Create new product
                 var product = new Product
                 {
-                    TenantId = TenantId,
+                    TenantId = tenantId,
+                    BranchId = dto.BranchId,
                     ProductName = dto.ProductName,
                     TotalFee = dto.TotalFee,
                     IsActive = true,
@@ -56,6 +53,7 @@ namespace ProductService.Services.Implementation
                 {
                     ProductId = product.ProductId,
                     TenantId = product.TenantId,
+                    BranchId = product.BranchId,
                     ProductName = product.ProductName,
                     TotalFee = product.TotalFee,
                     IsActive = product.IsActive,
@@ -65,32 +63,31 @@ namespace ProductService.Services.Implementation
             }
             catch (DbUpdateException ex)
             {
-
                 return ApiResponseFactory.Failure<ProductDto>("Database error occurred");
-
             }
 
         }
 
         public async Task<ApiResponse<List<Product>>> GetProductsAsync(
-            PaginationRequest request,
-            bool includeInactive)
+         PaginationRequest request,
+         bool includeInactive,
+         Guid branchId,
+         Guid tenantId)
         {
             try
             {
-                // Base query
                 var query = _db.Products
-                    .Where(p => p.TenantId == TenantId)  
+                    .Where(p =>
+                        p.TenantId == tenantId &&
+                        p.BranchId == branchId)  
                     .AsNoTracking();
 
-                // Apply filter
                 var pagedResult = await _repo.GetPagedAsync(
                     query,
                     request,
                     i => includeInactive || i.IsActive
                 );
 
-                // Wrap with standard response
                 return ApiResponseFactory.PagedSuccess(
                     pagedResult,
                     "Products fetched successfully"
@@ -98,19 +95,20 @@ namespace ProductService.Services.Implementation
             }
             catch (Exception ex)
             {
-
-                return ApiResponseFactory.Failure<List<Product>>(ex.Message, ["Database error occurred"]);
-
+                return ApiResponseFactory.Failure<List<Product>>(
+                    ex.Message,
+                    ["Database error occurred"]);
             }
         }
 
-        public async Task<ApiResponse<string>> UpdateProductAsync(int productId, ProductUpdateDto dto)
+
+        public async Task<ApiResponse<string>> UpdateProductAsync(int productId, ProductUpdateDto dto, Guid tenantId)
         {
             try
             {
                 int affectedRows = await _db.Products
                    .Where(p => p.ProductId == productId
-                            && p.TenantId == TenantId)
+                            && p.TenantId == tenantId)
                    .ExecuteUpdateAsync(s => s
                        .SetProperty(i => i.ProductName, dto.ProductName)
                        .SetProperty(i => i.TotalFee, dto.TotalFee)
@@ -135,13 +133,13 @@ namespace ProductService.Services.Implementation
         }
 
 
-        public async Task<ApiResponse<string>> RemoveProductAsync(int productId)
+        public async Task<ApiResponse<string>> RemoveProductAsync(int productId, Guid tenantId)
         {
             try
             {
                 var product = await _db.Products
                     .FirstOrDefaultAsync(p => p.ProductId == productId
-                                           && p.TenantId == TenantId);
+                                           && p.TenantId == tenantId);
                 if (product == null)
                 {
                     return ApiResponseFactory.Failure<string>("Product not found");

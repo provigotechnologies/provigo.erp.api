@@ -16,17 +16,17 @@ namespace ShiftService.Services.Implementation
         private readonly TenantDbContext _db = db;
         private readonly IGenericRepository<Shift> _repo = repo;
 
-        public async Task<ApiResponse<ShiftDto>> CreateShiftAsync(ShiftCreateDto dto)
+        public async Task<ApiResponse<ShiftDto>> CreateShiftAsync(ShiftCreateDto dto, Guid tenantId)
         {
             try
             {
 
                 // 1️⃣ Validate Product belongs to tenant
-                var productExists = await _db.Products
+                var shiftExists = await _db.Products
                     .AnyAsync(p => p.ProductId == dto.ProductId
-                                && p.TenantId == dto.TenantId);
+                                && p.TenantId == tenantId);
 
-                if (!productExists)
+                if (!shiftExists)
                     return ApiResponseFactory.Failure<ShiftDto>(
                         "Invalid product for this tenant."
                     );
@@ -34,7 +34,7 @@ namespace ShiftService.Services.Implementation
                 // 2️⃣ Validate Trainer belongs to tenant
                 var trainerExists = await _db.Users
                     .AnyAsync(u => u.UserId == dto.TrainerId
-                                && u.TenantId == dto.TenantId);
+                                && u.TenantId == tenantId);
 
                 if (!trainerExists)
                     return ApiResponseFactory.Failure<ShiftDto>(
@@ -43,7 +43,7 @@ namespace ShiftService.Services.Implementation
 
                 // 3️⃣ Case-insensitive duplicate check
                 var exists = await _db.Shifts
-                    .AnyAsync(s => s.TenantId == dto.TenantId &&
+                    .AnyAsync(s => s.TenantId == tenantId &&
                                    s.ShiftName.ToLower() == dto.ShiftName.ToLower());
 
                 if (exists)
@@ -56,7 +56,7 @@ namespace ShiftService.Services.Implementation
                 // 4️⃣ Create shift
                 var shift = new Shift
                 {
-                    TenantId = dto.TenantId,
+                    TenantId = tenantId,
                     ProductId = dto.ProductId,
                     TrainerId = dto.TrainerId,
                     ShiftName = dto.ShiftName.Trim(),
@@ -98,7 +98,7 @@ namespace ShiftService.Services.Implementation
 
         public async Task<ApiResponse<List<Shift>>> GetShiftsAsync(
             PaginationRequest request,
-            bool includeInactive)
+            bool includeInactive, Guid tenantId)
         {
             try
             {
@@ -126,13 +126,12 @@ namespace ShiftService.Services.Implementation
             }
         }
 
-        public async Task<ApiResponse<string>> UpdateShiftAsync(int shiftId, ShiftUpdateDto dto)
+        public async Task<ApiResponse<string>> UpdateShiftAsync(int shiftId, ShiftUpdateDto dto, Guid tenantId)
         {
             try
             {
                 int affectedRows = await _db.Shifts
-                .Where(i => i.ShiftId == shiftId)
-                .ExecuteUpdateAsync(s => s
+                    .Where(i => i.ShiftId == shiftId && i.TenantId == tenantId).ExecuteUpdateAsync(s => s
                     .SetProperty(i => i.ProductId, dto.ProductId)
                     .SetProperty(i => i.TrainerId, dto.TrainerId)
                     .SetProperty(i => i.ShiftName, dto.ShiftName)
@@ -156,7 +155,7 @@ namespace ShiftService.Services.Implementation
 
         }
 
-        public async Task<ApiResponse<string>> RemoveShiftAsync(int shiftId)
+        public async Task<ApiResponse<string>> RemoveShiftAsync(int shiftId, Guid tenantId)
         {
             try
             {

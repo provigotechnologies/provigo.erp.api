@@ -3,7 +3,6 @@ using IdentityService.Services;
 using Microsoft.EntityFrameworkCore;
 using OrderService.DTOs;
 using OrderService.Services.Interface;
-using OrderService.Services.Internal;
 using ProviGo.Common.Models;
 using ProviGo.Common.Pagination;
 using ProviGo.Common.Response;
@@ -12,13 +11,10 @@ namespace OrderService.Services.Implementation
 {
     public class OrderService(
         TenantDbContext db,
-        IGenericRepository<Order> repo,
-        IIdentityProvider identityProvider) : IOrderService
+        IGenericRepository<Order> repo) : IOrderService
     {
         private readonly TenantDbContext _db = db;
         private readonly IGenericRepository<Order> _repo = repo;
-        private readonly IIdentityProvider _identityProvider = identityProvider;
-        private Guid TenantId => _identityProvider.TenantId;
 
         // 🔹 Helper: Map Order Entity -> OrderDto
         private OrderDto MapToDto(Order order)
@@ -35,6 +31,8 @@ namespace OrderService.Services.Implementation
                 DiscountTotal = order.DiscountTotal,
                 TaxTotal = order.TaxTotal,
                 GrandTotal = order.GrandTotal,
+                PaidAmount = order.PaidAmount,
+                BalanceAmount = order.BalanceAmount,
                 CreatedAt = order.CreatedAt,
 
                 Items = order.OrderItems?.Select(i => new OrderItemDto
@@ -66,25 +64,25 @@ namespace OrderService.Services.Implementation
         }
 
         // ✅ CREATE ORDER
-        public async Task<ApiResponse<OrderDto>> CreateOrderAsync(OrderCreateDto dto)
+        public async Task<ApiResponse<OrderDto>> CreateOrderAsync(OrderCreateDto dto, Guid tenantId)
         {
             try
             {
                 // 🔒 Validate Branch
                 if (!await _db.Branches
-                        .AnyAsync(b => b.BranchId == dto.BranchId && b.TenantId == TenantId))
+                        .AnyAsync(b => b.BranchId == dto.BranchId && b.TenantId == tenantId))
                     return ApiResponseFactory.Failure<OrderDto>("Invalid branch");
 
                 // 🔒 Validate Customer
                 if (!await _db.Customers
-                        .AnyAsync(c => c.CustomerId == dto.CustomerId && c.TenantId == TenantId))
+                        .AnyAsync(c => c.CustomerId == dto.CustomerId && c.TenantId == tenantId))
                     return ApiResponseFactory.Failure<OrderDto>("Invalid customer");
 
                 // 🔒 Validate Products
                 var productIds = dto.Items.Select(i => i.ProductId).ToList();
                 var products = await _db.Products
                     .Where(p => productIds.Contains(p.ProductId)
-                             && p.TenantId == TenantId
+                             && p.TenantId == tenantId
                              && p.IsActive)
                     .ToListAsync();
 
@@ -109,19 +107,19 @@ namespace OrderService.Services.Implementation
 
                 var discountsFromDb = await _db.Discounts
                     .Where(d => discountIds.Contains(d.DiscountId)
-                             && d.TenantId == TenantId
+                             && d.TenantId == tenantId
                              && d.IsActive)
                     .ToListAsync();
 
                 var taxesFromDb = await _db.Taxes
                     .Where(t => taxIds.Contains(t.TaxId)
-                             && t.TenantId == TenantId
+                             && t.TenantId == tenantId
                              && t.IsActive)
                     .ToListAsync();
 
                 var chargesFromDb = await _db.Charges
                     .Where(c => chargeIds.Contains(c.ChargeId)
-                             && c.TenantId == TenantId
+                             && c.TenantId == tenantId
                              && c.IsActive)
                     .ToListAsync();
 
@@ -141,20 +139,36 @@ namespace OrderService.Services.Implementation
                     out var chargeTotal,
                     out var grandTotal);
 
+                // PAYMENT LOGIC 
+                var paidAmount = dto.PaidAmount < 0 ? 0 : dto.PaidAmount;
+
+                if (paidAmount > grandTotal)
+                    return ApiResponseFactory.Failure<OrderDto>(
+                        "Paid amount cannot exceed grand total");
+
+                var balanceAmount = grandTotal - paidAmount;
+
                 // 🔹 Create Order entity
                 var order = new Order
                 {
-                    TenantId = TenantId,
+                    TenantId = tenantId,
                     BranchId = dto.BranchId,
                     CustomerId = dto.CustomerId,
                     OrderDate = dto.OrderDate == default
-                                ? DateTime.UtcNow
-                                : dto.OrderDate,
-                    Status = "Created",
+                        ? DateTime.UtcNow
+                        : dto.OrderDate,
+
+                    Status = balanceAmount == 0 ? "Completed"
+                        : paidAmount > 0 ? "Confirmed"
+                        : "Created",
+
                     SubTotal = subTotal,
                     DiscountTotal = discountTotal,
                     TaxTotal = taxTotal,
                     GrandTotal = grandTotal,
+                    PaidAmount = paidAmount,
+                    BalanceAmount = balanceAmount,
+
                     OrderItems = orderItems,
                     OrderDiscounts = orderDiscounts,
                     OrderTaxes = orderTaxes,
@@ -174,14 +188,14 @@ namespace OrderService.Services.Implementation
             }
         }
 
-
+        // ✅ LIST ORDERS
         public async Task<ApiResponse<List<OrderDto>>> GetOrdersAsync(
-    PaginationRequest request,
-    bool includeInactive)
+        PaginationRequest request,
+        bool includeInactive, Guid tenantId)
         {
             // 1️⃣ Build query
             var query = _db.Orders
-                .Where(o => o.TenantId == TenantId)
+                .Where(o => o.TenantId == tenantId)
                 .Include(o => o.OrderItems)
                 .Include(o => o.OrderDiscounts)
                 .Include(o => o.OrderTaxes)
@@ -208,8 +222,24 @@ namespace OrderService.Services.Implementation
             return ApiResponseFactory.PagedSuccess(pagedDtoResult, "Orders fetched successfully");
         }
 
+        public async Task<ApiResponse<List<OrderDto>>> GetOrderByIdAsync(int orderId, Guid tenantId)
+        {
+            var order = await _db.Orders
+                .Include(o => o.OrderItems)
+                .Include(o => o.OrderTaxes)
+                .Include(o => o.OrderDiscounts)
+                .Include(o => o.OrderCharges)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(o => o.OrderId == orderId && o.TenantId == tenantId);
+
+            if (order == null)
+                return ApiResponseFactory.Failure<List<OrderDto>>("Order not found");
+
+            return ApiResponseFactory.Success(new List<OrderDto> { MapToDto(order) });
+        }
+        
         // ✅ UPDATE STATUS ONLY
-        public async Task<ApiResponse<string>> UpdateOrderAsync(int orderId, OrderUpdateDto dto)
+        public async Task<ApiResponse<string>> UpdateOrderAsync(int orderId, OrderUpdateDto dto, Guid tenantId)
         {
             var allowedStatuses = new[] { "Created", "Confirmed", "Completed", "Cancelled" };
 
@@ -217,7 +247,7 @@ namespace OrderService.Services.Implementation
                 return ApiResponseFactory.Failure<string>("Invalid status");
 
             var affectedRows = await _db.Orders
-                .Where(o => o.OrderId == orderId && o.TenantId == TenantId)
+                .Where(o => o.OrderId == orderId && o.TenantId == tenantId)
                 .ExecuteUpdateAsync(s => s.SetProperty(o => o.Status, dto.Status));
 
             if (affectedRows == 0)
@@ -227,10 +257,10 @@ namespace OrderService.Services.Implementation
         }
 
         // ✅ DELETE ORDER
-        public async Task<ApiResponse<string>> RemoveOrderAsync(int orderId)
+        public async Task<ApiResponse<string>> RemoveOrderAsync(int orderId, Guid tenantId)
         {
             var order = await _db.Orders
-                .FirstOrDefaultAsync(o => o.OrderId == orderId && o.TenantId == TenantId);
+                .FirstOrDefaultAsync(o => o.OrderId == orderId && o.TenantId == tenantId);
 
             if (order == null)
                 return ApiResponseFactory.Failure<string>("Order not found");
@@ -240,5 +270,72 @@ namespace OrderService.Services.Implementation
 
             return ApiResponseFactory.Success("Order deleted successfully");
         }
+
+        // ✅ UPDATE ORDER PAYMENT
+        public async Task<ApiResponse<string>> UpdatePaymentAsync(
+         int orderId,
+         decimal paidAmount,
+         Guid tenantId)
+        {
+            var order = await _db.Orders
+                .FirstOrDefaultAsync(o =>
+                    o.OrderId == orderId &&
+                    o.TenantId == tenantId);
+
+            if (order == null)
+                return ApiResponseFactory.Failure<string>("Order not found");
+
+            // ✅ SET — NOT ADD
+            order.PaidAmount = paidAmount;
+
+            order.BalanceAmount = order.GrandTotal - order.PaidAmount;
+
+            if (order.BalanceAmount <= 0)
+            {
+                order.BalanceAmount = 0;
+                order.Status = "Completed";
+            }
+            else
+            {
+                order.Status = "Confirmed";
+            }
+
+            await _db.SaveChangesAsync();
+
+            return ApiResponseFactory.Success("Payment updated successfully");
+        }
+
+        // ✅ UPDATE REFUND PAYMENT
+        public async Task<ApiResponse<string>> UpdateRefundAsync(
+        int orderId,
+        decimal refundAmount,
+        Guid tenantId)
+        {
+            var order = await _db.Orders
+                .FirstOrDefaultAsync(o =>
+                    o.OrderId == orderId &&
+                    o.TenantId == tenantId);
+
+            if (order == null)
+                return ApiResponseFactory.Failure<string>("Order not found");
+
+            order.PaidAmount -= refundAmount;
+
+            if (order.PaidAmount < 0)
+                order.PaidAmount = 0;
+
+            order.BalanceAmount = order.GrandTotal - order.PaidAmount;
+
+            if (order.PaidAmount == 0)
+                order.Status = "Created";
+            else
+                order.Status = "Confirmed";
+
+            await _db.SaveChangesAsync();
+
+            return ApiResponseFactory.Success("Refund updated successfully");
+        }
+
+
     }
 }

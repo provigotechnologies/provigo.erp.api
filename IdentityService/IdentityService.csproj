@@ -28,14 +28,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Services\Extensions\" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Provigo.Common.Exceptions\Provigo.Common.Exceptions.csproj" />
     <ProjectReference Include="..\ProviGo.Common.Models\ProviGo.Common.Models.csproj" />
     <ProjectReference Include="..\ProviGo.Common.Pagination\ProviGo.Common.Pagination.csproj" />
     <ProjectReference Include="..\ProviGo.Common.Response\ProviGo.Common.Response.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Services\Extensions\" />
   </ItemGroup>
 
 </Project>

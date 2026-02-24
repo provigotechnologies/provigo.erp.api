@@ -1,35 +1,56 @@
 ﻿using IdentityService.Data;
-using IdentityService.Services;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Provigo.Common.Exceptions.Middleware;
-using ProviGo.Common.Models;
-using ProviGo.Common.Pagination;
-using ShiftService.DTOs;
 using ShiftService.Endpoints;
-using ShiftService.Services.Extensions;
+using ShiftService.Middleware;
+using ShiftService.Services;
 using ShiftService.Services.Implementation;
 using ShiftService.Services.Interface;
-using System.Security.Claims;
+using ProviGo.Common.Pagination;
+using System.Text;
 
+// Builder
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<IIdentityProvider, IdentityProvider>();
+// 🔹 Application Services
 
-builder.Services.AddTransient<IShiftService, ShiftService.Services.Implementation.ShiftService>();
+builder.Services.AddScoped<IShiftService, ShiftService.Services.Implementation.ShiftService>();
+builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
-// 🔹 DbContext
-builder.Services.AddDbContext<TenantDbContext>(options =>
+builder.Services.AddScoped<ShiftProvider>();
+builder.Services.AddMemoryCache();
+builder.Services.AddCommonPagination();
+
+
+// 🔹 Master DB (Tenant Registry)
+
+builder.Services.AddDbContext<MasterDbContext>(options =>
     options.UseMySql(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
-        ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))
-    ));
+        builder.Configuration.GetConnectionString("Master"),
+        ServerVersion.AutoDetect(
+            builder.Configuration.GetConnectionString("Master")
+        )));
+
+
+// 🔹 Tenant DB (Per Tenant Connection)
+
+builder.Services.AddDbContext<TenantDbContext>((sp, options) =>
+{
+    var provider = sp.GetRequiredService<ShiftProvider>();
+
+    if (string.IsNullOrEmpty(provider.ConnectionString))
+        throw new Exception("Tenant connection string not configured.");
+
+    options.UseMySql(
+        provider.ConnectionString,
+        ServerVersion.AutoDetect(provider.ConnectionString));
+});
+
 
 // 🔹 CORS
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngularApp", policy =>
@@ -39,26 +60,89 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod();
     });
 });
-builder.Services.AddCommonPagination();
 
-// 🔹 Swagger
+
+// 🔐 JWT Authentication 
+
+/*builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
+            )
+        };
+    });
+
+builder.Services.AddAuthorization();*/
+
+
+// 🔹 Swagger (JWT + Tenant Header)
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "Shift Service API",
+        Title = "Product Service API",
         Version = "v1"
+    });
+
+    // 🔐 JWT
+    var jwtScheme = new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Reference = new OpenApiReference
+        {
+            Type = ReferenceType.SecurityScheme,
+            Id = JwtBearerDefaults.AuthenticationScheme
+        }
+    };
+
+    c.AddSecurityDefinition(jwtScheme.Reference.Id, jwtScheme);
+
+    // 🏢 Tenant Header
+    c.AddSecurityDefinition("TenantHeader", new OpenApiSecurityScheme
+    {
+        Name = "X-Tenant-Id",
+        Type = SecuritySchemeType.ApiKey,
+        In = ParameterLocation.Header,
+        Description = "Enter Tenant Id"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        { jwtScheme, Array.Empty<string>() },
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "TenantHeader"
+                }
+            },
+            Array.Empty<string>()
+        }
     });
 });
 
+
+// 🔹 Build App
+
 var app = builder.Build();
 
-// 🔹 Middlewares
-app.UseCors("AllowAngularApp");
-//Handling all the exceptions globally
-app.UseGlobalExceptionHandler();
 
+// 🔹 Middleware Pipeline 
 
 if (app.Environment.IsDevelopment())
 {
@@ -67,6 +151,15 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("AllowAngularApp");
+
+// app.UseAuthentication();
+
+app.UseMiddleware<ShiftMiddleware>();  // After Auth, Before Authorization
+
+// app.UseAuthorization();
+
 app.UseStaticFiles();
 
 ShiftEndpoints.Map(app);

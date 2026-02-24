@@ -22,7 +22,7 @@ namespace PricingService.Middleware
         public async Task Invoke(
             HttpContext context,
             MasterDbContext masterDb,
-            IdentityProvider provider)
+            PricingProvider provider)
         {
             var path = context.Request.Path.Value?.ToLower();
 

@@ -2,7 +2,6 @@
 {
     public class ShiftCreateDto
     {
-        public Guid TenantId { get; set; }
         public int ProductId { get; set; }
         public Guid TrainerId { get; set; }
         public string ShiftName { get; set; } = "";

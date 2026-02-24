@@ -1,46 +1,57 @@
 ﻿using IdentityService.Data;
-using IdentityService.Middleware;
-using IdentityService.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PaymentService.Endpoints;
 using PaymentService.Middleware;
 using PaymentService.Services;
-using PaymentService.Services.Extensions;
 using PaymentService.Services.Implementation;
 using PaymentService.Services.Interface;
 using ProviGo.Common.Pagination;
+using System.Text;
 
+// Builder
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddHttpContextAccessor();
+// 🔹 Application Services
 
-// ✅ Identity Provider
-builder.Services.AddScoped<IdentityProvider>();
-builder.Services.AddScoped<IIdentityProvider>(sp => sp.GetRequiredService<IdentityProvider>());
+builder.Services.AddScoped<IPaymentService, PaymentService.Services.Implementation.PaymentService>();
+builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
-// ✅ Master DB
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<PaymentProvider>();
+builder.Services.AddMemoryCache();
+builder.Services.AddCommonPagination();
+
+
+// 🔹 Master DB (Tenant Registry)
+
 builder.Services.AddDbContext<MasterDbContext>(options =>
     options.UseMySql(
         builder.Configuration.GetConnectionString("Master"),
         ServerVersion.AutoDetect(
             builder.Configuration.GetConnectionString("Master")
-        )
-    ));
+        )));
 
-// ✅ Tenant DB
-builder.Services.AddDbContext<TenantDbContext>();
 
-builder.Services.AddScoped<IPaymentService,
-    PaymentService.Services.Implementation.PaymentService>();
+// 🔹 Tenant DB (Per Tenant Connection)
 
-builder.Services.AddScoped(typeof(IGenericRepository<>),
-                           typeof(GenericRepository<>));
+builder.Services.AddDbContext<TenantDbContext>((sp, options) =>
+{
+    var provider = sp.GetRequiredService<PaymentProvider>();
 
-builder.Services.AddMemoryCache();
-builder.Services.AddCommonPagination();
+    if (string.IsNullOrEmpty(provider.ConnectionString))
+        throw new Exception("Tenant connection string not configured.");
+
+    options.UseMySql(
+        provider.ConnectionString,
+        ServerVersion.AutoDetect(provider.ConnectionString));
+});
+
 
 // 🔹 CORS
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngularApp", policy =>
@@ -51,15 +62,54 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 🔹 Swagger (Tenant Header)
+
+// 🔐 JWT Authentication 
+
+/*builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
+            )
+        };
+    });
+
+builder.Services.AddAuthorization();*/
+
+
+// 🔹 Swagger (JWT + Tenant Header)
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "Payment Service API",
+        Title = "Payment   Service API",
         Version = "v1"
     });
+
+    // 🔐 JWT
+    var jwtScheme = new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Reference = new OpenApiReference
+        {
+            Type = ReferenceType.SecurityScheme,
+            Id = JwtBearerDefaults.AuthenticationScheme
+        }
+    };
+
+    c.AddSecurityDefinition(jwtScheme.Reference.Id, jwtScheme);
 
     // 🏢 Tenant Header
     c.AddSecurityDefinition("TenantHeader", new OpenApiSecurityScheme
@@ -72,6 +122,7 @@ builder.Services.AddSwaggerGen(c =>
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
+        { jwtScheme, Array.Empty<string>() },
         {
             new OpenApiSecurityScheme
             {
@@ -87,12 +138,12 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 
-// 🔹 Build
+// 🔹 Build App
+
 var app = builder.Build();
 
 
-// 🔹 Middleware Order
-app.UseCors("AllowAngularApp");
+// 🔹 Middleware Pipeline 
 
 if (app.Environment.IsDevelopment())
 {
@@ -102,7 +153,13 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseMiddleware<PaymentMiddleware>();
+app.UseCors("AllowAngularApp");
+
+// app.UseAuthentication();
+
+app.UseMiddleware<PaymentMiddleware>();  // After Auth, Before Authorization
+
+// app.UseAuthorization();
 
 app.UseStaticFiles();
 

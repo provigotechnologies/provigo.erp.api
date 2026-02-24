@@ -22,7 +22,7 @@ namespace PaymentService.Middleware
         public async Task Invoke(
             HttpContext context,
             MasterDbContext masterDb,
-            IdentityProvider provider)
+            PaymentProvider provider)
         {
             var path = context.Request.Path.Value?.ToLower();
 

@@ -14,31 +14,28 @@ namespace PricingService.Services.Implementation
     TenantDbContext db,
     IGenericRepository<Discount> discountRepo,
     IGenericRepository<Charge> chargeRepo,
-    IGenericRepository<Tax> taxRepo,
-    IIdentityProvider identityProvider) : IPricingService
+    IGenericRepository<Tax> taxRepo) : IPricingService
     {
         private readonly TenantDbContext _db = db;
         private readonly IGenericRepository<Discount> _discountRepo = discountRepo;
         private readonly IGenericRepository<Charge> _chargeRepo = chargeRepo;
         private readonly IGenericRepository<Tax> _taxRepo = taxRepo;
-        private readonly IIdentityProvider _identityProvider = identityProvider;
-        private Guid TenantId => _identityProvider.TenantId;
 
         // Discount
-        public async Task<ApiResponse<DiscountDto>> CreateDiscountAsync(DiscountCreateDto dto)
+        public async Task<ApiResponse<DiscountDto>> CreateDiscountAsync(DiscountCreateDto dto, Guid tenantId)
         {
             try
             {
 
                 var exists = await _db.Discounts
-            .AnyAsync(d => d.TenantId == TenantId && d.Name == dto.Name);
+            .AnyAsync(d => d.TenantId == tenantId && d.Name == dto.Name);
 
                 if (exists)
                     return ApiResponseFactory.Failure<DiscountDto>("Discount already exists");
 
                 var discount = new Discount
                 {
-                    TenantId = TenantId,
+                    TenantId = tenantId,
                     Name = dto.Name,
                     Type = dto.Type,
                     Value = dto.Value,
@@ -74,13 +71,13 @@ namespace PricingService.Services.Implementation
 
         public async Task<ApiResponse<List<Discount>>> GetDiscountsAsync(
             PaginationRequest request,
-            bool includeInactive)
+            bool includeInactive, Guid tenantId)
         {
             try
             {
                 // Base query
                 var query = _db.Discounts
-                    .Where(p => p.TenantId == TenantId)
+                    .Where(p => p.TenantId == tenantId)
                     .AsNoTracking();
 
                 // Apply filter
@@ -104,13 +101,13 @@ namespace PricingService.Services.Implementation
             }
         }
 
-        public async Task<ApiResponse<string>> UpdateDiscountAsync(int discountId, DiscountUpdateDto dto)
+        public async Task<ApiResponse<string>> UpdateDiscountAsync(int discountId, DiscountUpdateDto dto, Guid tenantId)
         {
             try
             {
                 int affectedRows = await _db.Discounts
                    .Where(p => p.DiscountId == discountId
-                            && p.TenantId == TenantId)
+                            && p.TenantId == tenantId)
 
                    .ExecuteUpdateAsync(s => s
                        .SetProperty(i => i.Name, dto.Name)
@@ -137,13 +134,13 @@ namespace PricingService.Services.Implementation
         }
 
 
-        public async Task<ApiResponse<string>> RemoveDiscountAsync(int discountId)
+        public async Task<ApiResponse<string>> RemoveDiscountAsync(int discountId, Guid tenantId)
         {
             try
             {
                 var discount = await _db.Discounts
                     .FirstOrDefaultAsync(p => p.DiscountId == discountId
-                                           && p.TenantId == TenantId);
+                                           && p.TenantId == tenantId);
                 if (discount == null)
                 {
                     return ApiResponseFactory.Failure<string>("Discount not found");
@@ -172,20 +169,20 @@ namespace PricingService.Services.Implementation
 
 
         // Charge
-        public async Task<ApiResponse<ChargeDto>> CreateChargeAsync(ChargeCreateDto dto)
+        public async Task<ApiResponse<ChargeDto>> CreateChargeAsync(ChargeCreateDto dto, Guid tenantId)
         {
             try
             {
 
                 var exists = await _db.Charges
-            .AnyAsync(d => d.TenantId == TenantId && d.Name == dto.Name);
+            .AnyAsync(d => d.TenantId == tenantId && d.Name == dto.Name);
 
                 if (exists)
                     return ApiResponseFactory.Failure<ChargeDto>("Charge already exists");
 
                 var charge = new Charge
                 {
-                    TenantId = TenantId,
+                    TenantId = tenantId,
                     Name = dto.Name,
                     ChargeType = dto.ChargeType,
                     Value = dto.Value,
@@ -221,13 +218,13 @@ namespace PricingService.Services.Implementation
 
         public async Task<ApiResponse<List<Charge>>> GetChargesAsync(
             PaginationRequest request,
-            bool includeInactive)
+            bool includeInactive, Guid tenantId)
         {
             try
             {
                 // Base query
                 var query = _db.Charges
-                    .Where(p => p.TenantId == TenantId)
+                    .Where(p => p.TenantId == tenantId)
                     .AsNoTracking();
 
                 // Apply filter
@@ -251,13 +248,13 @@ namespace PricingService.Services.Implementation
             }
         }
 
-        public async Task<ApiResponse<string>> UpdateChargeAsync(int chargeId, ChargeUpdateDto dto)
+        public async Task<ApiResponse<string>> UpdateChargeAsync(int chargeId, ChargeUpdateDto dto, Guid tenantId)
         {
             try
             {
                 int affectedRows = await _db.Charges
                    .Where(p => p.ChargeId == chargeId
-                            && p.TenantId == TenantId)
+                            && p.TenantId == tenantId)
 
                    .ExecuteUpdateAsync(s => s
                        .SetProperty(i => i.Name, dto.Name)
@@ -284,13 +281,13 @@ namespace PricingService.Services.Implementation
         }
 
 
-        public async Task<ApiResponse<string>> RemoveChargeAsync(int chargeId)
+        public async Task<ApiResponse<string>> RemoveChargeAsync(int chargeId, Guid tenantId)
         {
             try
             {
                 var charge = await _db.Charges
                     .FirstOrDefaultAsync(p => p.ChargeId == chargeId
-                                           && p.TenantId == TenantId);
+                                           && p.TenantId == tenantId);
                 if (charge == null)
                 {
                     return ApiResponseFactory.Failure<string>("Charge not found");
@@ -319,20 +316,20 @@ namespace PricingService.Services.Implementation
 
 
         // Tax
-        public async Task<ApiResponse<TaxDto>> CreateTaxAsync(TaxCreateDto dto)
+        public async Task<ApiResponse<TaxDto>> CreateTaxAsync(TaxCreateDto dto, Guid tenantId)
         {
             try
             {
 
                 var exists = await _db.Taxes
-            .AnyAsync(d => d.TenantId == TenantId && d.Name == dto.Name);
+            .AnyAsync(d => d.TenantId == tenantId && d.Name == dto.Name);
 
                 if (exists)
                     return ApiResponseFactory.Failure<TaxDto>("Tax already exists");
 
                 var tax = new Tax
                 {
-                    TenantId = TenantId,
+                    TenantId = tenantId,
                     Name = dto.Name,
                     Rate = dto.Rate,
                     IsActive = dto.IsActive
@@ -366,13 +363,13 @@ namespace PricingService.Services.Implementation
 
         public async Task<ApiResponse<List<Tax>>> GetTaxesAsync(
             PaginationRequest request,
-            bool includeInactive)
+            bool includeInactive, Guid tenantId)
         {
             try
             {
                 // Base query
                 var query = _db.Taxes
-                    .Where(p => p.TenantId == TenantId)
+                    .Where(p => p.TenantId == tenantId)
                     .AsNoTracking();
 
                 // Apply filter
@@ -396,13 +393,13 @@ namespace PricingService.Services.Implementation
             }
         }
 
-        public async Task<ApiResponse<string>> UpdateTaxAsync(int taxId, TaxUpdateDto dto)
+        public async Task<ApiResponse<string>> UpdateTaxAsync(int taxId, TaxUpdateDto dto, Guid tenantId)
         {
             try
             {
                 int affectedRows = await _db.Taxes
                    .Where(p => p.TaxId == taxId
-                            && p.TenantId == TenantId)
+                            && p.TenantId == tenantId)
 
                    .ExecuteUpdateAsync(s => s
                        .SetProperty(i => i.Name, dto.Name)
@@ -428,13 +425,13 @@ namespace PricingService.Services.Implementation
         }
 
 
-        public async Task<ApiResponse<string>> RemoveTaxAsync(int taxId)
+        public async Task<ApiResponse<string>> RemoveTaxAsync(int taxId, Guid tenantId)
         {
             try
             {
                 var tax = await _db.Taxes
                     .FirstOrDefaultAsync(p => p.TaxId == taxId
-                                           && p.TenantId == TenantId);
+                                           && p.TenantId == tenantId);
                 if (tax == null)
                 {
                     return ApiResponseFactory.Failure<string>("Tax not found");

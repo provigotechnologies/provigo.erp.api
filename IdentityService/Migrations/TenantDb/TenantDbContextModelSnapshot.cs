@@ -251,6 +251,9 @@ namespace IdentityService.Migrations.TenantDb
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("OrderId"));
 
+                    b.Property<decimal>("BalanceAmount")
+                        .HasColumnType("decimal(65,30)");
+
                     b.Property<Guid>("BranchId")
                         .HasColumnType("char(36)");
 
@@ -268,6 +271,9 @@ namespace IdentityService.Migrations.TenantDb
 
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<decimal>("PaidAmount")
+                        .HasColumnType("decimal(65,30)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -418,17 +424,24 @@ namespace IdentityService.Migrations.TenantDb
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<string>("Mode")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
                     b.Property<int>("OrderId")
                         .HasColumnType("int");
 
-                    b.Property<string>("PaymentStatus")
+                    b.Property<decimal>("PaidAmount")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("char(36)");
 
-                    b.Property<decimal>("TotalPayable")
+                    b.Property<decimal>("TotalAmount")
                         .HasColumnType("decimal(65,30)");
 
                     b.HasKey("PaymentId");
@@ -453,18 +466,35 @@ namespace IdentityService.Migrations.TenantDb
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(65,30)");
 
-                    b.Property<string>("GatewayRef")
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Currency")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("GatewayOrderId")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("GatewayPaymentId")
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Mode")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)");
 
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<int>("PaymentId")
                         .HasColumnType("int");
+
+                    b.Property<string>("Signature")
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -516,6 +546,9 @@ namespace IdentityService.Migrations.TenantDb
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ProductId"));
 
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("char(36)");
+
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("datetime(6)");
 
@@ -535,6 +568,8 @@ namespace IdentityService.Migrations.TenantDb
 
                     b.HasKey("ProductId");
 
+                    b.HasIndex("BranchId");
+
                     b.HasIndex("TenantId", "ProductName")
                         .IsUnique();
 
@@ -551,6 +586,16 @@ namespace IdentityService.Migrations.TenantDb
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<string>("GatewayRefundId")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Mode")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
 
                     b.Property<int>("PaymentId")
                         .HasColumnType("int");
@@ -1056,7 +1101,7 @@ namespace IdentityService.Migrations.TenantDb
                         .IsRequired();
 
                     b.HasOne("ProviGo.Common.Models.Order", "Order")
-                        .WithMany()
+                        .WithMany("Payments")
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1087,11 +1132,19 @@ namespace IdentityService.Migrations.TenantDb
 
             modelBuilder.Entity("ProviGo.Common.Models.Product", b =>
                 {
+                    b.HasOne("ProviGo.Common.Models.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("ProviGo.Common.Models.TenantDetails", "TenantDetails")
                         .WithMany()
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Branch");
 
                     b.Navigation("TenantDetails");
                 });
@@ -1245,6 +1298,8 @@ namespace IdentityService.Migrations.TenantDb
                     b.Navigation("OrderItems");
 
                     b.Navigation("OrderTaxes");
+
+                    b.Navigation("Payments");
                 });
 
             modelBuilder.Entity("ProviGo.Common.Models.Payment", b =>

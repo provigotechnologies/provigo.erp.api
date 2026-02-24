@@ -1,9 +1,12 @@
 ﻿using IdentityService.Data;
+using CustomerService.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using ProviGo.Common.Pagination;
 using CustomerService.DTOs;
 using CustomerService.Services.Interface;
+using ProviGo.Common.Models;
+using ProviGo.Common.Pagination;
+using System.Security.Claims;
 
 namespace CustomerService.Endpoints
 {
@@ -12,51 +15,56 @@ namespace CustomerService.Endpoints
         public static void Map(WebApplication app)
         {
             // ===========================
-            // 🔹 Customer
+            // 🔹 Products
             // ===========================
 
-            app.MapPost("/api/customers", async (
-                CustomerCreateDto dto,
-                ICustomerService customerService) =>
-            {
-                var response = await customerService.CreateCustomerAsync(dto);
-                return response.Success
-                    ? Results.Ok(response)
-                    : Results.BadRequest(response);
-            });
-
-            app.MapGet("/api/customers", async (
+            app.MapGet("/api/products", async (
                 [AsParameters] PaginationRequest request,
                 bool includeInactive,
-                ICustomerService customerService) =>
+                CustomerProvider customerProvider,
+                 [FromServices] ICustomerService customerService) =>
             {
-                var response = await customerService.GetCustomersAsync(request, includeInactive);
+                var response = await customerService.GetCustomersAsync(request, includeInactive, customerProvider.TenantId);
                 return Results.Ok(response);
             });
 
-            app.MapPut("/api/customers/{id:int}", async (
+            app.MapPost("/api/products", async (
+                CustomerCreateDto dto,
+                 [FromServices] ICustomerService customerService, CustomerProvider customerProvider) =>
+            {
+                var response = await customerService.CreateCustomerAsync(dto, customerProvider.TenantId);
+                return response.Success
+                    ? Results.Ok(response)
+                    : Results.BadRequest(response);
+            });
+
+            app.MapPut("/api/products/{id:int}", async (
                 int id,
                 CustomerUpdateDto dto,
-                ICustomerService customerService) =>
+                CustomerProvider customerProvider,
+                 [FromServices] ICustomerService customerService) =>
             {
-                var response = await customerService.UpdateCustomerAsync(id, dto);
+
+                var response = await customerService.UpdateCustomerAsync(id, dto, customerProvider.TenantId);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
             });
 
-            app.MapDelete("/api/customers/{id:int}", async (
+            app.MapDelete("/api/products/{id:int}", async (
                 int id,
-                ICustomerService customerService) =>
+                CustomerProvider customerProvider,
+                [FromServices] ICustomerService customerService) =>
             {
-                var response = await customerService.RemoveCustomerAsync(id);
+
+                var response = await customerService.RemoveCustomerAsync(id, customerProvider.TenantId);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
             });
 
 
-         
+
         }
     }
 }

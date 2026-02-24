@@ -4,27 +4,44 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ProviGo.Common.Models
 {
-    [Table("PaymentTransactions")]
-    public class PaymentTransaction
-    {
-        [Key]
-        public int TransactionId { get; set; }
+       [Table("PaymentTransactions")]
+        public class PaymentTransaction
+        {
+            [Key]
+            public int TransactionId { get; set; }
 
-        [Required]
-        public int PaymentId { get; set; }
+            // 🔥 FK to Payment
+            [Required]
+            public int PaymentId { get; set; }
 
-        [Required, MaxLength(20)]
-        public string Mode { get; set; } // Cash, Card, UPI
+            // 🔥 Your internal order reference 
+            public int OrderId { get; set; }
 
-        public decimal Amount { get; set; }
+            // 🔥 Razorpay order id
+            public string? GatewayOrderId { get; set; }
 
-        [MaxLength(100)]
-        public string GatewayRef { get; set; }
+            public string? GatewayPaymentId { get; set; }
 
-        [MaxLength(20)]
-        public string Status { get; set; } // Success, Failed
+            public decimal Amount { get; set; }  // paise
 
-        [ForeignKey(nameof(PaymentId))]
-        public Payment Payment { get; set; }
+            public string Currency { get; set; } = "INR";
+
+            [Required, MaxLength(20)]
+            public string Mode { get; set; }  // ONLINE / CASH / UPI
+
+            [MaxLength(20)]
+            public string Status { get; set; }  // Created / Success / Failed
+
+            public string? Signature { get; set; }
+
+            public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+            public DateTime? PaidAt { get; set; }
+
+            // 🔗 Navigation
+            [ForeignKey(nameof(PaymentId))]
+            public Payment Payment { get; set; }
+        }
+
     }
-}
+

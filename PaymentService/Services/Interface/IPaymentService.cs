@@ -8,34 +8,23 @@ namespace PaymentService.Services.Interface
 {
     public interface IPaymentService
     {
-        // 🔹 Get all payments 
-        Task<ApiResponse<List<Payment>>> GetPaymentsAsync(
-            PaginationRequest request,
-            bool includeInactive);
+        Task<ApiResponse<List<Payment>>> 
+            GetPaymentsAsync(PaginationRequest request, bool includeInactive, Guid tenantId);
 
-        // 🔹 Get single payment with transactions
-        Task<ApiResponse<PaymentDto>> GetPaymentByIdAsync(int paymentId);
+        Task<ApiResponse<List<OrderPaymentHistoryDto>>>
+            GetOrderPaymentHistoryAsync(int orderId, Guid tenantId);
 
-        // 🔹 Create payment (Always Pending)
-        Task<ApiResponse<PaymentDto>> CreatePaymentAsync(
-            PaymentCreateDto dto);
+        Task<PaymentTransactionResponseCreateDto>
+            CreateOnlinePaymentAsync(PaymentTransactionRequestCreateDto request, Guid tenantId);
 
-        // 🔹 Add payment transaction 
-        Task<ApiResponse<PaymentTransactionDto>> AddTransactionAsync(
-            int paymentId,
-            PaymentTransactionCreateDto dto);
+        Task<bool>
+            VerifyAndSavePaymentTransactionAsync(VerifyPaymentTransactionRequestDto dto, Guid tenantId);
 
-        // 🔹 Update only TotalPayable 
-        Task<ApiResponse<string>> UpdatePaymentAsync(
-            int paymentId,
-            PaymentUpdateDto dto);
+        Task<ApiResponse<PaymentDto>>
+            CreateOfflinePaymentAsync(PaymentCreateDto dto, Guid tenantId);
 
-        // 🔹 Delete payment
-        Task<ApiResponse<string>> RemovePaymentAsync(int paymentId);
-
-        // 🔹 Refund payment
-        Task<ApiResponse<RefundDto>> CreateRefundAsync(RefundCreateDto dto);
-
+        Task<ApiResponse<RefundDto>>
+            CreateRefundAsync(RefundCreateDto dto, Guid tenantId);
     }
 }
 

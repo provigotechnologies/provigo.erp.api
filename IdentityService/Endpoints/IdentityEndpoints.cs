@@ -1,5 +1,4 @@
-﻿using IdentityService.Data;
-using IdentityService.DTOs;
+﻿using IdentityService.DTOs;
 using IdentityService.Services;
 using IdentityService.Services.Interface;
 using Microsoft.EntityFrameworkCore;

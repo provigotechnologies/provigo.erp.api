@@ -5,15 +5,11 @@ VisualStudioVersion = 17.14.35906.104
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IdentityService", "IdentityService\IdentityService.csproj", "{F7397016-648A-4B8B-983D-3AF4D3CE9340}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NotificationService", "NotificationService\NotificationService.csproj", "{768CD094-0E40-4219-915F-DE13C290040C}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SettingsManagement", "SettingsManagement\SettingsManagement.csproj", "{9EBCDE39-CB92-4B7D-A498-785EBF654CD2}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MasterService", "MasterService\MasterService.csproj", "{BDB93566-35C7-4807-8AD6-A3F25F6E0F7D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PurchaseService", "PurchaseService\PurchaseService.csproj", "{771BB5FF-F361-465A-8EDE-80F355D36F68}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FeeService", "FeeService\FeeService.csproj", "{C0AC1FC3-198F-4D83-8301-1DD2E4AA8350}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AttendanceService", "AttendanceService\AttendanceService.csproj", "{2684DA1C-F6C3-46BD-BEC1-9F097465C933}"
 EndProject
@@ -51,10 +47,6 @@ Global
 		{F7397016-648A-4B8B-983D-3AF4D3CE9340}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F7397016-648A-4B8B-983D-3AF4D3CE9340}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F7397016-648A-4B8B-983D-3AF4D3CE9340}.Release|Any CPU.Build.0 = Release|Any CPU
-		{768CD094-0E40-4219-915F-DE13C290040C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{768CD094-0E40-4219-915F-DE13C290040C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{768CD094-0E40-4219-915F-DE13C290040C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{768CD094-0E40-4219-915F-DE13C290040C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9EBCDE39-CB92-4B7D-A498-785EBF654CD2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9EBCDE39-CB92-4B7D-A498-785EBF654CD2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9EBCDE39-CB92-4B7D-A498-785EBF654CD2}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -67,10 +59,6 @@ Global
 		{771BB5FF-F361-465A-8EDE-80F355D36F68}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{771BB5FF-F361-465A-8EDE-80F355D36F68}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{771BB5FF-F361-465A-8EDE-80F355D36F68}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C0AC1FC3-198F-4D83-8301-1DD2E4AA8350}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C0AC1FC3-198F-4D83-8301-1DD2E4AA8350}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C0AC1FC3-198F-4D83-8301-1DD2E4AA8350}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C0AC1FC3-198F-4D83-8301-1DD2E4AA8350}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2684DA1C-F6C3-46BD-BEC1-9F097465C933}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2684DA1C-F6C3-46BD-BEC1-9F097465C933}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2684DA1C-F6C3-46BD-BEC1-9F097465C933}.Release|Any CPU.ActiveCfg = Release|Any CPU

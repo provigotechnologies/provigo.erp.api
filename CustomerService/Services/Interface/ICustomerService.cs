@@ -1,20 +1,18 @@
-﻿using IdentityService.Data;
+﻿using CustomerService.DTOs;
 using ProviGo.Common.Models;
 using ProviGo.Common.Pagination;
 using ProviGo.Common.Response;
-using CustomerService.DTOs;
 
 namespace CustomerService.Services.Interface
 {
     public interface ICustomerService
     {
-        Task<ApiResponse<List<Customer>>> GetCustomersAsync(PaginationRequest request, bool includeInactive);
+        Task<ApiResponse<List<Customer>>> GetCustomersAsync(PaginationRequest request, bool includeInactive, Guid tenantId);
 
-        Task<ApiResponse<CustomerDto>> CreateCustomerAsync(CustomerCreateDto dto);
+        Task<ApiResponse<CustomerDto>> CreateCustomerAsync(CustomerCreateDto dto, Guid tenantId);
 
-        Task<ApiResponse<string>> UpdateCustomerAsync(int customerId, CustomerUpdateDto dto);
+        Task<ApiResponse<string>> UpdateCustomerAsync(int customerId, CustomerUpdateDto dto, Guid tenantId);
 
-        Task<ApiResponse<string>> RemoveCustomerAsync(int customerId);
+        Task<ApiResponse<string>> RemoveCustomerAsync(int customerId, Guid tenantId);
     }
 }
-

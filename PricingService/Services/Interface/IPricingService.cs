@@ -11,30 +11,30 @@ namespace PricingService.Services.Interface
     public interface IPricingService
     {
         // Discount
-        Task<ApiResponse<List<Discount>>> GetDiscountsAsync(PaginationRequest request, bool includeInactive);
+        Task<ApiResponse<List<Discount>>> GetDiscountsAsync(PaginationRequest request, bool includeInactive, Guid tenantId);
 
-        Task<ApiResponse<DiscountDto>> CreateDiscountAsync(DiscountCreateDto dto);
+        Task<ApiResponse<DiscountDto>> CreateDiscountAsync(DiscountCreateDto dto, Guid tenantId);
 
-        Task<ApiResponse<string>> UpdateDiscountAsync(int discountId, DiscountUpdateDto dto);
+        Task<ApiResponse<string>> UpdateDiscountAsync(int discountId, DiscountUpdateDto dto, Guid tenantId);
 
-        Task<ApiResponse<string>> RemoveDiscountAsync(int discountId);
+        Task<ApiResponse<string>> RemoveDiscountAsync(int discountId, Guid tenantId);
 
         // Charge
-        Task<ApiResponse<List<Charge>>> GetChargesAsync(PaginationRequest request, bool includeInactive);
+        Task<ApiResponse<List<Charge>>> GetChargesAsync(PaginationRequest request, bool includeInactive, Guid tenantId);
 
-        Task<ApiResponse<ChargeDto>> CreateChargeAsync(ChargeCreateDto dto);
+        Task<ApiResponse<ChargeDto>> CreateChargeAsync(ChargeCreateDto dto, Guid tenantId);
 
-        Task<ApiResponse<string>> UpdateChargeAsync(int chargeId, ChargeUpdateDto dto);
+        Task<ApiResponse<string>> UpdateChargeAsync(int chargeId, ChargeUpdateDto dto, Guid tenantId);
 
-        Task<ApiResponse<string>> RemoveChargeAsync(int chargeId);
+        Task<ApiResponse<string>> RemoveChargeAsync(int chargeId, Guid tenantId);
 
         // Tax
-        Task<ApiResponse<List<Tax>>> GetTaxesAsync(PaginationRequest request, bool includeInactive);
+        Task<ApiResponse<List<Tax>>> GetTaxesAsync(PaginationRequest request, bool includeInactive, Guid tenantId);
 
-        Task<ApiResponse<TaxDto>> CreateTaxAsync(TaxCreateDto dto);
+        Task<ApiResponse<TaxDto>> CreateTaxAsync(TaxCreateDto dto, Guid tenantId);
 
-        Task<ApiResponse<string>> UpdateTaxAsync(int taxId, TaxUpdateDto dto);
+        Task<ApiResponse<string>> UpdateTaxAsync(int taxId, TaxUpdateDto dto, Guid tenantId);
 
-        Task<ApiResponse<string>> RemoveTaxAsync(int taxId);
+        Task<ApiResponse<string>> RemoveTaxAsync(int taxId, Guid tenantId);
     }
 }

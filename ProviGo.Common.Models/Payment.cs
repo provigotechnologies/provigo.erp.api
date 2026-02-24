@@ -18,9 +18,12 @@ namespace ProviGo.Common.Models
         public Guid BranchId { get; set; }
 
         public int OrderId { get; set; }
+        public string Mode { get; set; }
 
-        public decimal TotalPayable { get; set; }
-        public string PaymentStatus { get; set; }
+        public decimal TotalAmount { get; set; }
+
+        public decimal PaidAmount { get; set; }
+        public string Status { get; set; } // Pending / Success / Failed
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 

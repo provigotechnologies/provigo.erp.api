@@ -16,13 +16,10 @@ namespace TenantService.Services.Implementation
 {
     public class TenantService(
     TenantDbContext db,
-    IGenericRepository<TenantDetails> repo,
-    IIdentityProvider identityProvider) : ITenantService
+    IGenericRepository<TenantDetails> repo) : ITenantService
     {
         private readonly TenantDbContext _db = db;
         private readonly IGenericRepository<TenantDetails> _repo = repo;
-        private readonly IIdentityProvider _identityProvider = identityProvider;
-        private Guid TenantId => _identityProvider.TenantId;
 
         public async Task<ApiResponse<TenantDto>> CreateTenantAsync(
          TenantCreateDto dto)

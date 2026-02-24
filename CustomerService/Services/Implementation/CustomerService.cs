@@ -12,23 +12,20 @@ using ProviGo.Common.Response;
 namespace CustomerService.Services.Implementation
 {
     public class CustomerService(
-  TenantDbContext db,
-  IGenericRepository<Customer> repo,
-  IIdentityProvider identityProvider) : ICustomerService
+     TenantDbContext db,
+     IGenericRepository<Customer> repo) : ICustomerService
     {
         private readonly TenantDbContext _db = db;
         private readonly IGenericRepository<Customer> _repo = repo;
-        private readonly IIdentityProvider _identityProvider = identityProvider;
-        private Guid TenantId => _identityProvider.TenantId;
 
-        public async Task<ApiResponse<CustomerDto>> CreateCustomerAsync(CustomerCreateDto dto)
+        public async Task<ApiResponse<CustomerDto>> CreateCustomerAsync(CustomerCreateDto dto, Guid tenantId)
         {
             try
             {
 
                 // 🔒 Duplicate email check
                 var emailExists = await _db.Customers
-                    .AnyAsync(i => i.TenantId == TenantId
+                    .AnyAsync(i => i.TenantId == tenantId
             && i.Email == dto.Email);
 
                 if (emailExists)
@@ -40,7 +37,7 @@ namespace CustomerService.Services.Implementation
 
                 var customer = new Customer
                 {
-                    TenantId = TenantId,
+                    TenantId = tenantId,
                     FullName = dto.FullName,
                     Phone = dto.Phone,
                     Email = dto.Email,
@@ -85,13 +82,13 @@ namespace CustomerService.Services.Implementation
 
         public async Task<ApiResponse<List<Customer>>> GetCustomersAsync(
             PaginationRequest request,
-            bool includeInactive)
+            bool includeInactive, Guid tenantId)
         {
             try
             {
                 // Base query
                 var query = _db.Customers
-                    .Where(c => c.TenantId == TenantId)
+                    .Where(c => c.TenantId == tenantId)
                     .AsNoTracking();
 
                 // Apply filter
@@ -115,12 +112,12 @@ namespace CustomerService.Services.Implementation
             }
         }
 
-        public async Task<ApiResponse<string>> UpdateCustomerAsync(int customerId, CustomerUpdateDto dto)
+        public async Task<ApiResponse<string>> UpdateCustomerAsync(int customerId, CustomerUpdateDto dto, Guid tenantId)
         {
             try
             {
                 int affectedRows = await _db.Customers
-                .Where(i => i.CustomerId == customerId && i.TenantId == TenantId)
+                .Where(i => i.CustomerId == customerId && i.TenantId == tenantId)
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(i => i.FullName, dto.FullName)
                     .SetProperty(i => i.Email, dto.Email)
@@ -147,13 +144,13 @@ namespace CustomerService.Services.Implementation
 
         }
 
-        public async Task<ApiResponse<string>> RemoveCustomerAsync(int customerId)
+        public async Task<ApiResponse<string>> RemoveCustomerAsync(int customerId, Guid tenantId)
         {
             try
             {
                 var customer = await _db.Customers
                     .FirstOrDefaultAsync(c => c.CustomerId == customerId
-                                           && c.TenantId == TenantId);
+                                           && c.TenantId == tenantId);
 
                 if (customer == null)
                 {

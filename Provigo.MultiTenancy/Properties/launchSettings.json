@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "ProviGo.MultiTenancy": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:61118;http://localhost:61119"
+    }
+  }
+}

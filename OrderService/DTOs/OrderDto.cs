@@ -14,6 +14,8 @@
         public decimal DiscountTotal { get; set; }
         public decimal TaxTotal { get; set; }
         public decimal GrandTotal { get; set; }
+        public decimal PaidAmount { get; set; }
+        public decimal BalanceAmount { get; set; }
 
         public DateTime CreatedAt { get; set; }
 

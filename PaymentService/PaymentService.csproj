@@ -17,10 +17,12 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="RazorPay.Core" Version="1.0.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\IdentityService\IdentityService.csproj" />
+    <ProjectReference Include="..\OrderService\OrderService.csproj" />
   </ItemGroup>
 
 </Project>

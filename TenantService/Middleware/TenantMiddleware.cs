@@ -1,10 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using IdentityService.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using ProviGo.Common.Models;
-using IdentityService.Data;
 using TenantService.Services;
-using TenantService.Services.Extensions;
-using IdentityService.Services;
 
 namespace TenantService.Middleware;
 
@@ -21,33 +19,30 @@ public class TenantMiddleware
 
     public async Task Invoke(
         HttpContext context,
-        MasterDbContext masterDb,
-        IdentityProvider provider)
+        TenantProvider provider,
+        MasterDbContext masterDb)
     {
+        // 🔹 Skip swagger
         var path = context.Request.Path.Value?.ToLower();
-
-        // Skip swagger
-        if (path != null && path.Contains("/swagger"))
+        if (path!.Contains("/swagger"))
         {
             await _next(context);
             return;
         }
 
-        var tenantIdHeader = context.Request.Headers["X-Tenant-Id"].FirstOrDefault();
+        // 🔹 1️⃣ Get TenantId from HEADER
+        var tenantHeader = context.Request.Headers["X-Tenant-Id"].FirstOrDefault();
 
-        if (!Guid.TryParse(tenantIdHeader, out var tenantId))
+        if (!Guid.TryParse(tenantHeader, out var tenantId))
         {
-            context.Response.StatusCode = 400;
-            await context.Response.WriteAsJsonAsync(new
-            {
-                success = false,
-                message = "Invalid Tenant Id"
-            });
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            await context.Response.WriteAsync("Invalid or Missing X-Tenant-Id header");
             return;
         }
 
         var cacheKey = $"TENANT_{tenantId}";
 
+        // 🔹 2️⃣ Check cache
         if (!_cache.TryGetValue(cacheKey, out Tenant tenant))
         {
             tenant = await masterDb.Tenant
@@ -57,26 +52,21 @@ public class TenantMiddleware
 
             if (tenant == null)
             {
-                context.Response.StatusCode = 404;
-                await context.Response.WriteAsJsonAsync(new
-                {
-                    success = false,
-                    message = "Tenant not found"
-                });
+                context.Response.StatusCode = StatusCodes.Status404NotFound;
+                await context.Response.WriteAsync("Tenant not found or inactive");
                 return;
             }
 
-            _cache.Set(cacheKey, tenant,
-                new MemoryCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow =
-                        TimeSpan.FromMinutes(30),
-                    SlidingExpiration =
-                        TimeSpan.FromMinutes(10)
-                });
+            // 🔹 3️⃣ Store in cache
+            _cache.Set(cacheKey, tenant, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30),
+                SlidingExpiration = TimeSpan.FromMinutes(10),
+                Priority = CacheItemPriority.High
+            });
         }
 
-        // 🔥 Set tenant globally for this request
+        // 🔹 4️⃣ Set tenant to scoped provider
         provider.SetTenant(tenant);
 
         await _next(context);

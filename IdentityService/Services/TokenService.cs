@@ -1,5 +1,4 @@
-﻿using IdentityService.Data;
-using Microsoft.IdentityModel.Tokens;
+﻿using Microsoft.IdentityModel.Tokens;
 using ProviGo.Common.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;

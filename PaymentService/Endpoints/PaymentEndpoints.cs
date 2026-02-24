@@ -1,6 +1,9 @@
-﻿using PaymentService.DTOs;
+﻿using Microsoft.AspNetCore.Mvc;
+using PaymentService.DTOs;
+using PaymentService.Services;
 using PaymentService.Services.Interface;
 using ProviGo.Common.Pagination;
+using PaymentService.Utils;
 
 namespace PaymentService.Endpoints
 {
@@ -8,83 +11,100 @@ namespace PaymentService.Endpoints
     {
         public static void Map(WebApplication app)
         {
-            // 🔹 Create payment
             app.MapGet("/api/payments", async (
                 [AsParameters] PaginationRequest request,
                 bool includeInactive,
-                IPaymentService paymentService) =>
+                PaymentProvider paymentProvider,
+                 [FromServices] IPaymentService paymentService) =>
             {
-                var response = await paymentService.GetPaymentsAsync(request, includeInactive);
+                var response = await paymentService.GetPaymentsAsync(request, includeInactive, paymentProvider.TenantId);
                 return Results.Ok(response);
             });
 
-            // 🔹 Get payment by id
-            app.MapGet("/api/payments/{id:int}", async (
-                int id,
-                IPaymentService paymentService) =>
-            {
-                var response = await paymentService.GetPaymentByIdAsync(id);
-                return response.Success
-                    ? Results.Ok(response)
-                    : Results.NotFound(response);
+
+            app.MapPost("/api/paymentTransactions",
+                async ([FromBody] PaymentTransactionRequestCreateDto req,
+                       PaymentProvider paymentProvider,
+                       IPaymentService service) => {
+                try
+                {
+                    if (req.Amount <= 0) return Results.BadRequest(new { message = "Invalid amount" });
+
+                    var resp = await service.CreateOnlinePaymentAsync(req, paymentProvider.TenantId);
+                               return Results.Ok(resp);
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem(ex.Message);
+                }
+
             });
 
-            // 🔹 Add transaction
-            app.MapPost("/api/payments/{id:int}/transactions", async (
-                int id,
-                PaymentTransactionCreateDto dto,
-                IPaymentService paymentService) =>
+            app.MapPost("/api/payments",
+            async (PaymentCreateDto dto,
+                   IPaymentService service,
+                   PaymentProvider paymentProvider,
+                   HttpContext context) =>
             {
-                var response = await paymentService.AddTransactionAsync(id, dto);
-                return response.Success
-                    ? Results.Ok(response)
-                    : Results.BadRequest(response);
+                try
+                {
+                    if (dto.PaidAmount <= 0)
+                        return Results.BadRequest(new { message = "Invalid amount" });
+
+                    var result = await service.CreateOfflinePaymentAsync(dto, paymentProvider.TenantId);
+
+                    if (!result.Success)
+                        return Results.BadRequest(result);
+
+                    return Results.Ok(result);
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem(ex.Message);
+                }
             });
 
-            // 🔹 Create refund
-            app.MapPost("/api/payments/refund", async (
-                RefundCreateDto dto,
-                IPaymentService paymentService) =>
+
+            app.MapPost("/api/paymentTransaction/verify",
+    async (VerifyPaymentTransactionRequestDto dto,
+           IPaymentService service,
+           PaymentProvider paymentProvider) =>
+    {
+        var ok = await service.VerifyAndSavePaymentTransactionAsync(dto, paymentProvider.TenantId);
+
+        if (ok) return Results.Ok(new { status = "success" });
+        return Results.BadRequest(new { status = "failed" });
+    });
+
+
+            app.MapPost("/api/payments/refund",
+            async (RefundCreateDto dto,
+                   IPaymentService service,
+                   PaymentProvider paymentProvider,
+                   HttpContext context) =>
             {
-                var response = await paymentService.CreateRefundAsync(dto);
-                return response.Success
-                    ? Results.Ok(response)
-                    : Results.BadRequest(response);
+                if (dto.RefundAmount <= 0)
+                    return Results.BadRequest(new { message = "Invalid refund amount" });
+
+                var result = await service.CreateRefundAsync(dto, paymentProvider.TenantId);
+
+                if (!result.Success)
+                    return Results.BadRequest(result);
+
+                return Results.Ok(result);
             });
 
-            // 🔹 Get payment
-            app.MapPost("/api/payments", async (
-                PaymentCreateDto dto,
-                IPaymentService paymentService) =>
-            {
-                var response = await paymentService.CreatePaymentAsync(dto);
-                return response.Success
-                    ? Results.Ok(response)
-                    : Results.BadRequest(response);
-            });
 
-            // 🔹 Update payment
-            app.MapPut("/api/payments/{id:int}", async (
-                int id,
-                PaymentUpdateDto dto,
-                IPaymentService paymentService) =>
-            {
-                var response = await paymentService.UpdatePaymentAsync(id, dto);
-                return response.Success
-                    ? Results.Ok(response)
-                    : Results.BadRequest(response);
-            });
+            app.MapPost("/api/paymentTransaction/generate-signature",
+    (VerifyPaymentTransactionRequestDto dto, IConfiguration config) =>
+    {
+        var secret = config["Razorpay:KeySecret"];
+        var data = $"{dto.razorpay_order_id}|{dto.razorpay_payment_id}";
+        var signature = SignatureHelper.CreateSignature(data, secret ?? "");
 
-            // 🔹 Delete payment
-            app.MapDelete("/api/payments/{id:int}", async (
-                int id,
-                IPaymentService paymentService) =>
-            {
-                var response = await paymentService.RemovePaymentAsync(id);
-                return response.Success
-                    ? Results.Ok(response)
-                    : Results.BadRequest(response);
-            });
+        return Results.Ok(new { generatedSignature = signature });
+    });
+
         }
 
     }

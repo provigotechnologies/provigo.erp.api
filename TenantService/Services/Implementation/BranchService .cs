@@ -15,29 +15,26 @@ using TenantService.Services.Interface;
 namespace TenantService.Services.Implementation
 {
     public class BranchService(
-    TenantDbContext db,
-    IGenericRepository<Branch> repo,
-    IIdentityProvider identityProvider) : IBranchService
+     TenantDbContext db,
+     IGenericRepository<Branch> repo) : IBranchService
     {
         private readonly TenantDbContext _db = db;
         private readonly IGenericRepository<Branch> _repo = repo;
-        private readonly IIdentityProvider _identityProvider = identityProvider;
-        private Guid TenantId => _identityProvider.TenantId;
 
-        public async Task<ApiResponse<BranchDto>> CreateBranchAsync(BranchCreateDto dto)
+        public async Task<ApiResponse<BranchDto>> CreateBranchAsync(BranchCreateDto dto, Guid tenantId)
         {
             try
             {
                 // 🔒 Duplicate Name check
                 var exists = await _db.Branches
-                    .AnyAsync(b => b.TenantId == TenantId && b.BranchName == dto.BranchName);
+                    .AnyAsync(b => b.TenantId == tenantId && b.BranchName == dto.BranchName);
 
                 if (exists)
                     return ApiResponseFactory.Failure<BranchDto>("Branch name already exists for this tenant");
 
                 var branch = new Branch
                 {
-                    TenantId = TenantId,
+                    TenantId = tenantId,
                     BranchName = dto.BranchName,
                     Address = dto.Address,
                     IsActive = true,
@@ -69,7 +66,9 @@ namespace TenantService.Services.Implementation
             }
             catch (DbUpdateException ex)
             {
-                return ApiResponseFactory.Failure<BranchDto>("Database error occurred");
+                return ApiResponseFactory.Failure<BranchDto>(
+                    ex.InnerException?.Message ?? ex.Message
+                );
             }
         }
 
@@ -94,10 +93,10 @@ namespace TenantService.Services.Implementation
         //    });
         //}
 
-        public async Task<ApiResponse<BranchDto>> GetBranchByIdAsync(Guid branchId)
+        public async Task<ApiResponse<BranchDto>> GetBranchByIdAsync(Guid branchId, Guid tenantId)
         {
             var branch = await _db.Branches.AsNoTracking()
-                .FirstOrDefaultAsync(b => b.BranchId == branchId && b.TenantId == TenantId);
+                .FirstOrDefaultAsync(b => b.BranchId == branchId && b.TenantId == tenantId);
 
             if (branch == null)
                 return ApiResponseFactory.Failure<BranchDto>("Branch not found for this tenant");
@@ -117,12 +116,12 @@ namespace TenantService.Services.Implementation
 
         public async Task<ApiResponse<List<Branch>>> GetBranchesAsync(
            PaginationRequest request,
-           bool includeInactive)
+           bool includeInactive, Guid tenantId)
         {
             try
             {
                 var query = _db.Branches
-                    .Where(b => b.TenantId == TenantId)
+                    .Where(b => b.TenantId == tenantId)
                     .AsNoTracking();
 
                 // Apply filter
@@ -147,13 +146,13 @@ namespace TenantService.Services.Implementation
         }
 
 
-        public async Task<ApiResponse<string>> UpdateBranchAsync(Guid branchId, BranchUpdateDto dto)
+        public async Task<ApiResponse<string>> UpdateBranchAsync(Guid branchId, BranchUpdateDto dto, Guid tenantId)
         {
             try
             {
 
                 int affectedRows = await _db.Branches
-                    .Where(b => b.BranchId == branchId && b.TenantId == TenantId)
+                    .Where(b => b.BranchId == branchId && b.TenantId == tenantId)
                     .ExecuteUpdateAsync(s => s
                         .SetProperty(b => b.BranchName, dto.BranchName)
                         .SetProperty(b => b.Address, dto.Address)
@@ -175,13 +174,13 @@ namespace TenantService.Services.Implementation
         }
 
 
-        public async Task<ApiResponse<string>> RemoveBranchAsync(Guid branchId)
+        public async Task<ApiResponse<string>> RemoveBranchAsync(Guid branchId, Guid tenantId)
         {
             try
             {
                 var branch = await _db.Branches
                     .FirstOrDefaultAsync(b => b.BranchId == branchId &&
-                                              b.TenantId == TenantId);
+                                              b.TenantId == tenantId);
                 if (branch == null)
                 {
                     return ApiResponseFactory.Failure<string>("Branch not found");

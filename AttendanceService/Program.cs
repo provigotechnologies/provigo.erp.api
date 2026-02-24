@@ -1,22 +1,45 @@
 ﻿using IdentityService.Data;
-using AttendanceService.DTOs;
+using IdentityService.Middleware;
+using IdentityService.Services;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
+using AttendanceService.Endpoints;
+using AttendanceService.Middleware;
+using AttendanceService.Services;
 using AttendanceService.Services.Extensions;
 using AttendanceService.Services.Implementation;
 using AttendanceService.Services.Interface;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models;
-using Provigo.Common.Exceptions.Middleware;
-using ProviGo.Common.Models;
 using ProviGo.Common.Pagination;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 🔹 DbContext
-builder.Services.AddDbContext<TenantDbContext>(options =>
+builder.Services.AddHttpContextAccessor();
+
+// ✅ Identity Provider
+builder.Services.AddScoped<AttendanceProvider>();
+builder.Services.AddScoped<IAttendanceProvider>(sp =>
+    sp.GetRequiredService<AttendanceProvider>());
+
+// ✅ Master DB
+builder.Services.AddDbContext<MasterDbContext>(options =>
     options.UseMySql(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
-        ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))
+        builder.Configuration.GetConnectionString("Master"),
+        ServerVersion.AutoDetect(
+            builder.Configuration.GetConnectionString("Master")
+        )
     ));
+
+// ✅ Tenant DB
+builder.Services.AddDbContext<TenantDbContext>();
+
+builder.Services.AddScoped<IAttendanceProvider,
+    AttendanceService.Services.Implementation.AttendanceService>();
+
+builder.Services.AddScoped(typeof(IGenericRepository<>),
+                           typeof(GenericRepository<>));
+
+builder.Services.AddMemoryCache();
+builder.Services.AddCommonPagination();
 
 // 🔹 CORS
 builder.Services.AddCors(options =>
@@ -28,9 +51,8 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod();
     });
 });
-builder.Services.AddCommonPagination();
-builder.Services.AddTransient<IAttendanceService, AttendanceService.Services.Implementation.AttendanceService>();
-// 🔹 Swagger
+
+// 🔹 Swagger (Tenant Header)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -39,15 +61,39 @@ builder.Services.AddSwaggerGen(c =>
         Title = "Attendance Service API",
         Version = "v1"
     });
+
+    // 🏢 Tenant Header
+    c.AddSecurityDefinition("TenantHeader", new OpenApiSecurityScheme
+    {
+        Name = "X-Tenant-Id",
+        Type = SecuritySchemeType.ApiKey,
+        In = ParameterLocation.Header,
+        Description = "Enter Tenant Id"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "TenantHeader"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
 });
 
+
+// 🔹 Build
 var app = builder.Build();
 
-// 🔹 Middlewares
-app.UseCors("AllowAngularApp");
-//Handling all the exceptions globally
-app.UseGlobalExceptionHandler();
 
+// 🔹 Middleware Order
+app.UseCors("AllowAngularApp");
 
 if (app.Environment.IsDevelopment())
 {
@@ -56,28 +102,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseMiddleware<AttendanceMiddleware>();
+
 app.UseStaticFiles();
 
-
-// ==================== ATTENDANCE APIs ====================
-// Create Attendance
-
-app.MapPost("/api/attendance",
-async (AttendanceDto dto, IAttendanceService attendanceService) =>
-{
-    var res = await attendanceService.CreateAttendanceAsync(dto);
-    return res.Success ? Results.Ok(res) : Results.BadRequest(res);
-});
-
-// List Attendance
-app.MapGet("/api/attendance",
-async ([AsParameters] PaginationRequest request,
-bool includeInactive,
-IAttendanceService attendanceService) =>
-{
-    var res = await attendanceService.GetAttendanceAsync(request, includeInactive);
-    return Results.Ok(res);
-});
-
+AttendanceEndpoints.Map(app);
 
 app.Run();
