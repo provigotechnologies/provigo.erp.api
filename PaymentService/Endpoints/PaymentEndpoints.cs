@@ -11,6 +11,7 @@ namespace PaymentService.Endpoints
     {
         public static void Map(WebApplication app)
         {
+
             app.MapGet("/api/payments", async (
                 [AsParameters] PaginationRequest request,
                 bool includeInactive,
@@ -66,44 +67,83 @@ namespace PaymentService.Endpoints
 
 
             app.MapPost("/api/paymentTransaction/verify",
-    async (VerifyPaymentTransactionRequestDto dto,
+            async (VerifyPaymentTransactionRequestDto dto,
            IPaymentService service,
            PaymentProvider paymentProvider) =>
-    {
-        var ok = await service.VerifyAndSavePaymentTransactionAsync(dto, paymentProvider.TenantId);
+            {
+                var ok = await service.VerifyOnlinePaymentAsync(dto, paymentProvider.TenantId);
 
-        if (ok) return Results.Ok(new { status = "success" });
-        return Results.BadRequest(new { status = "failed" });
-    });
+                if (ok) return Results.Ok(new { status = "success" });
+                return Results.BadRequest(new { status = "failed" });
+            });
 
 
-            app.MapPost("/api/payments/refund",
-            async (RefundCreateDto dto,
+            app.MapPost("/api/payments/refunds/online",
+             async ([FromBody] RefundCreateDto dto,
+                    IPaymentService service,
+                    PaymentProvider paymentProvider) =>
+             {
+                 if (dto.RefundAmount <= 0)
+                     return Results.BadRequest(new { message = "Invalid refund amount" });
+
+                 if (paymentProvider.TenantId == Guid.Empty)
+                     return Results.Unauthorized();
+
+                 var result = await service.CreateOnlineRefundAsync(dto, paymentProvider.TenantId);
+
+                 return result.Success
+                     ? Results.Ok(result)
+                     : Results.BadRequest(result);
+             });
+
+
+            app.MapPost("/api/payments/refunds/verify",
+            async (string gatewayRefundId,
                    IPaymentService service,
-                   PaymentProvider paymentProvider,
-                   HttpContext context) =>
+                   PaymentProvider paymentProvider) =>
+            {
+                if (paymentProvider.TenantId == Guid.Empty)
+                    return Results.Unauthorized();
+
+                var ok = await service.VerifyOnlineRefundAsync(
+                    gatewayRefundId,
+                    paymentProvider.TenantId);
+
+                if (ok)
+                    return Results.Ok(new { status = "success" });
+
+                return Results.BadRequest(new { status = "failed" });
+            });
+
+
+            app.MapPost("/api/payments/refunds/offline",
+            async ([FromBody] RefundCreateDto dto,
+                   IPaymentService service,
+                   PaymentProvider paymentProvider) =>
             {
                 if (dto.RefundAmount <= 0)
                     return Results.BadRequest(new { message = "Invalid refund amount" });
 
-                var result = await service.CreateRefundAsync(dto, paymentProvider.TenantId);
+                if (paymentProvider.TenantId == Guid.Empty)
+                    return Results.Unauthorized();
 
-                if (!result.Success)
-                    return Results.BadRequest(result);
+                var result = await service.CreateOfflineRefundAsync(dto, paymentProvider.TenantId);
 
-                return Results.Ok(result);
+                return result.Success
+                    ? Results.Ok(result)
+                    : Results.BadRequest(result);
             });
 
 
             app.MapPost("/api/paymentTransaction/generate-signature",
-    (VerifyPaymentTransactionRequestDto dto, IConfiguration config) =>
-    {
-        var secret = config["Razorpay:KeySecret"];
-        var data = $"{dto.razorpay_order_id}|{dto.razorpay_payment_id}";
-        var signature = SignatureHelper.CreateSignature(data, secret ?? "");
+            (VerifyPaymentTransactionRequestDto dto, IConfiguration config) =>
+            {
+                var secret = config["Razorpay:KeySecret"];
+                var data = $"{dto.razorpay_order_id}|{dto.razorpay_payment_id}";
+                var signature = SignatureHelper.CreateSignature(data, secret ?? "");
 
-        return Results.Ok(new { generatedSignature = signature });
-    });
+                return Results.Ok(new { generatedSignature = signature });
+            });
 
         }
 

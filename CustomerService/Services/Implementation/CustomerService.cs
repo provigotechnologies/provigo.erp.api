@@ -38,6 +38,7 @@ namespace CustomerService.Services.Implementation
                 var customer = new Customer
                 {
                     TenantId = tenantId,
+                    BranchId = dto.BranchId,
                     FullName = dto.FullName,
                     Phone = dto.Phone,
                     Email = dto.Email,
@@ -58,6 +59,7 @@ namespace CustomerService.Services.Implementation
                 {
                     CustomerId = customer.CustomerId,
                     TenantId = customer.TenantId,
+                    BranchId = customer.BranchId,
                     FullName = customer.FullName,
                     Phone = customer.Phone,
                     Email = customer.Email,
@@ -81,41 +83,53 @@ namespace CustomerService.Services.Implementation
         }
 
         public async Task<ApiResponse<List<Customer>>> GetCustomersAsync(
-            PaginationRequest request,
-            bool includeInactive, Guid tenantId)
+         PaginationRequest request,
+         bool includeInactive,
+         Guid branchId,
+         Guid tenantId)
         {
             try
             {
-                // Base query
                 var query = _db.Customers
-                    .Where(c => c.TenantId == tenantId)
+                    .Where(p =>
+                        p.TenantId == tenantId &&
+                        p.BranchId == branchId)
                     .AsNoTracking();
 
-                // Apply filter
                 var pagedResult = await _repo.GetPagedAsync(
                     query,
                     request,
                     i => includeInactive || i.IsActive
                 );
 
-                // Wrap with standard response
                 return ApiResponseFactory.PagedSuccess(
                     pagedResult,
-                    "Customers fetched successfully"
+                    "Branches fetched successfully"
                 );
             }
             catch (Exception ex)
             {
-
-                return ApiResponseFactory.Failure<List<Customer>>(ex.Message, ["Database error occurred"]);
-
+                return ApiResponseFactory.Failure<List<Customer>>(
+                    ex.Message,
+                    ["Database error occurred"]);
             }
         }
 
-        public async Task<ApiResponse<string>> UpdateCustomerAsync(int customerId, CustomerUpdateDto dto, Guid tenantId)
+
+        public async Task<ApiResponse<string>> UpdateCustomerAsync(
+        int customerId,
+        CustomerUpdateDto dto,
+        Guid tenantId)
         {
             try
             {
+                var exists = await _db.Customers.AnyAsync(p =>
+                    p.TenantId == tenantId &&
+                    p.CustomerId != customerId);
+
+                if (exists)
+                    return ApiResponseFactory.Failure<string>("Customer already exists");
+
                 int affectedRows = await _db.Customers
                 .Where(i => i.CustomerId == customerId && i.TenantId == tenantId)
                 .ExecuteUpdateAsync(s => s
@@ -125,23 +139,17 @@ namespace CustomerService.Services.Implementation
                     .SetProperty(i => i.Address, dto.Address)
                     .SetProperty(i => i.JoinDate, dto.JoinDate)
                     .SetProperty(i => i.IsActive, dto.IsActive)
-                );
+                    );
+
                 if (affectedRows == 0)
-                {
-                    throw new NotFoundException("Customer not found");
-                    //return ApiResponseFactory.Failure<string>("Institute not found");
-                    // return ApiResponseFactory.Failure<string>("Update failed");
-                }
+                    return ApiResponseFactory.Failure<string>("Customer not found");
 
                 return ApiResponseFactory.Success("Customer updated successfully");
             }
             catch (DbUpdateException)
             {
-
                 return ApiResponseFactory.Failure<string>("Database error occurred");
-
             }
-
         }
 
         public async Task<ApiResponse<string>> RemoveCustomerAsync(int customerId, Guid tenantId)

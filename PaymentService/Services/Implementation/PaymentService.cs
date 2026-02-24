@@ -193,7 +193,7 @@ namespace PaymentService.Services.Implementation
 
 
         // 🔹 VERIFY ONLINE PAYMENT
-        public async Task<bool> VerifyAndSavePaymentTransactionAsync(
+        public async Task<bool> VerifyOnlinePaymentAsync(
      VerifyPaymentTransactionRequestDto dto, Guid tenantId)
         {
 
@@ -342,9 +342,9 @@ namespace PaymentService.Services.Implementation
         }
 
 
-        // 4 REFUND PAYMENT
-        public async Task<ApiResponse<RefundDto>> CreateRefundAsync(
-         RefundCreateDto dto, Guid tenantId)
+        //  REFUND OFFLINE PAYMENT
+        public async Task<ApiResponse<RefundDto>> CreateOfflineRefundAsync(
+    RefundCreateDto dto, Guid tenantId)
         {
             try
             {
@@ -352,114 +352,204 @@ namespace PaymentService.Services.Implementation
                     return ApiResponseFactory.Failure<RefundDto>("Invalid refund amount");
 
                 var payment = await _db.Payments
-                    .Include(p => p.Transactions)
                     .Include(p => p.Refunds)
-                    .FirstOrDefaultAsync(p => p.PaymentId == dto.PaymentId &&
-                                              p.TenantId == tenantId);
+                    .FirstOrDefaultAsync(p =>
+                        p.PaymentId == dto.PaymentId &&
+                        p.TenantId == tenantId &&
+                        p.Mode != "ONLINE");
 
                 if (payment == null)
-                    return ApiResponseFactory.Failure<RefundDto>("Payment not found");
+                    return ApiResponseFactory.Failure<RefundDto>("Offline payment not found");
 
                 var totalRefunded = payment.Refunds
                     .Where(r => r.Status == "Success")
                     .Sum(r => r.RefundAmount);
 
-                var refundableAmount = payment.PaidAmount;
+                var remainingRefundable = payment.PaidAmount - totalRefunded;
 
-                if (dto.RefundAmount > refundableAmount)
+                if (dto.RefundAmount > remainingRefundable)
                     return ApiResponseFactory.Failure<RefundDto>(
                         "Refund exceeds remaining paid amount");
 
-                string? gatewayRefundId = null;
-
-                // 🔥 ONLINE REFUND
-                if (payment.Mode == "ONLINE")
+                // 🔹 Create Refund Record
+                var refund = new Refund
                 {
-                    var transaction = payment.Transactions
-                        .Where(t => t.Status == "Success")
-                        .OrderByDescending(t => t.PaidAt)
-                        .FirstOrDefault();
-
-                    if (transaction == null)
-                        return ApiResponseFactory.Failure<RefundDto>(
-                            "No successful online transaction found");
-
-                    if (string.IsNullOrEmpty(transaction.GatewayPaymentId))
-                        return ApiResponseFactory.Failure<RefundDto>(
-                            "Invalid gateway payment id");
-
-                    var client = new RazorpayClient(GetKeyId(), GetKeySecret());
-
-                    var options = new Dictionary<string, object>
-                    {
-                        { "amount", (int)(dto.RefundAmount * 100) },
-                        { "speed", "normal" }
-                    };
-
-                    var razorpayRefund = client.Payment
-                        .Fetch(transaction.GatewayPaymentId)
-                        .Refund(options);
-
-                    gatewayRefundId = razorpayRefund["id"]?.ToString();
-                }
-
-                // 🔥 OFFLINE REFUND → No gateway call
-                else
-                {
-                    gatewayRefundId = null;
-                }
-
-                // 🔥 Create Refund Record
-                var refundEntity = new Refund
-                {
-                    TenantId = payment.TenantId,
+                    TenantId = tenantId,
                     PaymentId = payment.PaymentId,
                     OrderId = payment.OrderId,
                     RefundAmount = dto.RefundAmount,
                     Reason = dto.Reason,
                     Status = "Success",
-                    Mode = payment.Mode == "ONLINE" ? "ONLINE" : dto.Mode,
-                    GatewayRefundId = gatewayRefundId,
+                    Mode = dto.Mode, // CASH / UPI
                     CreatedAt = DateTime.UtcNow
                 };
 
-                _db.Refunds.Add(refundEntity);
+                _db.Refunds.Add(refund);
 
-                // 🔥 Reduce PaidAmount
-                payment.PaidAmount -= dto.RefundAmount;
+                // 🔹 Update Payment Status
+                var newTotalRefunded = totalRefunded + dto.RefundAmount;
 
-                if (payment.PaidAmount == 0)
-                    payment.Status = "Refunded";
-                else
-                    payment.Status = "Partial";
+                payment.Status = newTotalRefunded >= payment.PaidAmount
+                    ? "Refunded"
+                    : "Partially Refunded";
 
                 await _db.SaveChangesAsync();
 
-                // 🔥 Update Order Service
-                decimal totalPaid = await _db.Payments
-                    .Where(p => p.OrderId == payment.OrderId)
+                // ======================================
+                // 🔥 ORDER STATUS UPDATE (NO PaidAmount)
+                // ======================================
+
+                var totalPayments = await _db.Payments
+                    .Where(p => p.OrderId == payment.OrderId &&
+                                p.TenantId == tenantId)
                     .SumAsync(p => p.PaidAmount);
 
+                var totalOrderRefunds = await _db.Refunds
+                    .Where(r => r.OrderId == payment.OrderId &&
+                                r.TenantId == tenantId &&
+                                r.Status == "Success")
+                    .SumAsync(r => r.RefundAmount);
+
+                var netPaid = totalPayments - totalOrderRefunds;
+
+                string orderStatus;
+
+                if (netPaid <= 0)
+                    orderStatus = "Unpaid";
+                else if (netPaid < totalPayments)
+                    orderStatus = "Partially Paid";
+                else
+                    orderStatus = "Paid";
+
+                _httpClient.DefaultRequestHeaders.Remove("X-Tenant-Id");
+                _httpClient.DefaultRequestHeaders.Add("X-Tenant-Id", tenantId.ToString());
+
                 await _httpClient.PutAsJsonAsync(
-                    $"{_config["Services:OrderService"]}/api/orders/{payment.OrderId}/update-payment",
-                    new { PaidAmount = totalPaid });
+                    $"{_config["Services:OrderService"]}/api/orders/{payment.OrderId}/update-status",
+                    new { PaymentStatus = orderStatus });
+
+                // ======================================
 
                 return ApiResponseFactory.Success(new RefundDto
                 {
-                    RefundId = refundEntity.RefundId,
-                    PaymentId = refundEntity.PaymentId,
-                    RefundAmount = refundEntity.RefundAmount,
-                    Reason = refundEntity.Reason,
-                    Status = refundEntity.Status,
-                    CreatedAt = refundEntity.CreatedAt
-                }, "Refund processed successfully");
+                    RefundId = refund.RefundId,
+                    PaymentId = refund.PaymentId,
+                    RefundAmount = refund.RefundAmount,
+                    Reason = refund.Reason,
+                    Status = refund.Status,
+                    CreatedAt = refund.CreatedAt
+                }, "Offline refund processed successfully");
             }
             catch (Exception ex)
             {
-                return ApiResponseFactory.Failure<RefundDto>(
-                    "Refund failed: " + ex.Message);
+                return ApiResponseFactory.Failure<RefundDto>("Refund failed: " + ex.Message);
             }
         }
+
+
+        //  REFUND ONLINE PAYMENT
+        public async Task<ApiResponse<RefundDto>> CreateOnlineRefundAsync(
+     RefundCreateDto dto, Guid tenantId)
+        {
+            if (dto.RefundAmount <= 0)
+                return ApiResponseFactory.Failure<RefundDto>("Invalid refund amount");
+
+            var payment = await _db.Payments
+                .Include(p => p.Transactions)
+                .FirstOrDefaultAsync(p =>
+                    p.PaymentId == dto.PaymentId &&
+                    p.TenantId == tenantId &&
+                    p.Mode == "ONLINE");
+
+            if (payment == null)
+                return ApiResponseFactory.Failure<RefundDto>("Online payment not found");
+
+            var transaction = payment.Transactions
+                .Where(t => t.Status == "Success")
+                .OrderByDescending(t => t.PaidAt)
+                .FirstOrDefault();
+
+            if (transaction == null)
+                return ApiResponseFactory.Failure<RefundDto>("Transaction not found");
+
+            var client = new RazorpayClient(GetKeyId(), GetKeySecret());
+
+            var options = new Dictionary<string, object>
+            {
+                { "amount", (int)(dto.RefundAmount * 100) }
+            };
+
+            var razorRefund = client.Payment
+                .Fetch(transaction.GatewayPaymentId)
+                .Refund(options);
+
+            var refund = new Refund
+            {
+                TenantId = tenantId,
+                PaymentId = payment.PaymentId,
+                OrderId = payment.OrderId,
+                RefundAmount = dto.RefundAmount,
+                Reason = dto.Reason,
+                Status = "Pending",
+                Mode = "ONLINE",
+                GatewayRefundId = razorRefund["id"]?.ToString(),
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _db.Refunds.Add(refund);
+            await _db.SaveChangesAsync();
+
+            return ApiResponseFactory.Success(new RefundDto
+            {
+                RefundId = refund.RefundId,
+                RefundAmount = refund.RefundAmount,
+                Status = refund.Status
+            }, "Refund initiated successfully");
+        }
+
+
+        // 🔹 VERIFY ONLINE REFUND
+        public async Task<bool> VerifyOnlineRefundAsync(
+      string gatewayRefundId,
+      Guid tenantId)
+        {
+            var refund = await _db.Refunds
+                .Include(r => r.Payment)
+                .FirstOrDefaultAsync(r =>
+                    r.GatewayRefundId == gatewayRefundId &&
+                    r.TenantId == tenantId);
+
+            if (refund == null || refund.Status == "Success")
+                return false;
+
+            var client = new RazorpayClient(GetKeyId(), GetKeySecret());
+
+            var razorRefund = client.Refund.Fetch(gatewayRefundId);
+
+            if (razorRefund["status"]?.ToString() != "processed")
+                return false;
+
+            // ✅ Update Refund Status Only
+            refund.Status = "Success";
+
+            var payment = refund.Payment;
+
+            // ✅ Update Payment Status Only (No Amount Calculation)
+            payment.Status = "Refunded";
+
+            await _db.SaveChangesAsync();
+
+            // ✅ Update Order Status Only (No Amount Update)
+            _httpClient.DefaultRequestHeaders.Remove("X-Tenant-Id");
+            _httpClient.DefaultRequestHeaders.Add("X-Tenant-Id", tenantId.ToString());
+
+            await _httpClient.PutAsJsonAsync(
+                $"{_config["Services:OrderService"]}/api/orders/{payment.OrderId}/update-status",
+                new { PaymentStatus = "Refunded" });
+
+            return true;
+        }
+
 
     }
 }

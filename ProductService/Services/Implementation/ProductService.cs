@@ -102,34 +102,39 @@ namespace ProductService.Services.Implementation
         }
 
 
-        public async Task<ApiResponse<string>> UpdateProductAsync(int productId, ProductUpdateDto dto, Guid tenantId)
+        public async Task<ApiResponse<string>> UpdateProductAsync(
+        int productId,
+        ProductUpdateDto dto,
+        Guid tenantId)
         {
             try
             {
+                var exists = await _db.Products.AnyAsync(p =>
+                    p.TenantId == tenantId &&
+                    p.ProductName == dto.ProductName &&
+                    p.ProductId != productId);
+
+                if (exists)
+                    return ApiResponseFactory.Failure<string>("Product already exists");
+
                 int affectedRows = await _db.Products
-                   .Where(p => p.ProductId == productId
-                            && p.TenantId == tenantId)
-                   .ExecuteUpdateAsync(s => s
-                       .SetProperty(i => i.ProductName, dto.ProductName)
-                       .SetProperty(i => i.TotalFee, dto.TotalFee)
-                       .SetProperty(i => i.IsActive, dto.IsActive)
-                   );
+                    .Where(p => p.ProductId == productId &&
+                                p.TenantId == tenantId)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(i => i.ProductName, dto.ProductName)
+                        .SetProperty(i => i.TotalFee, dto.TotalFee)
+                        .SetProperty(i => i.IsActive, dto.IsActive)
+                    );
+
                 if (affectedRows == 0)
-                {
-                    throw new NotFoundException("Product not found");
-                    //return ApiResponseFactory.Failure<string>("Institute not found");
-                    // return ApiResponseFactory.Failure<string>("Update failed");
-                }
+                    return ApiResponseFactory.Failure<string>("Product not found");
 
                 return ApiResponseFactory.Success("Product updated successfully");
             }
             catch (DbUpdateException)
             {
-
                 return ApiResponseFactory.Failure<string>("Database error occurred");
-
             }
-
         }
 
 

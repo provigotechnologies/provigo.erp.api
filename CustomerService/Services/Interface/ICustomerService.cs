@@ -7,7 +7,7 @@ namespace CustomerService.Services.Interface
 {
     public interface ICustomerService
     {
-        Task<ApiResponse<List<Customer>>> GetCustomersAsync(PaginationRequest request, bool includeInactive, Guid tenantId);
+        Task<ApiResponse<List<Customer>>> GetCustomersAsync(PaginationRequest request, bool includeInactive, Guid tenantId, Guid branchId);
 
         Task<ApiResponse<CustomerDto>> CreateCustomerAsync(CustomerCreateDto dto, Guid tenantId);
 

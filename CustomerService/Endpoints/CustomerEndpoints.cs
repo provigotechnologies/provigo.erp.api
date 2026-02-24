@@ -18,17 +18,18 @@ namespace CustomerService.Endpoints
             // 🔹 Products
             // ===========================
 
-            app.MapGet("/api/products", async (
+            app.MapGet("/api/customers", async (
                 [AsParameters] PaginationRequest request,
                 bool includeInactive,
+                Guid branchId,
                 CustomerProvider customerProvider,
                  [FromServices] ICustomerService customerService) =>
             {
-                var response = await customerService.GetCustomersAsync(request, includeInactive, customerProvider.TenantId);
+                var response = await customerService.GetCustomersAsync(request, includeInactive, customerProvider.TenantId, branchId);
                 return Results.Ok(response);
             });
 
-            app.MapPost("/api/products", async (
+            app.MapPost("/api/customers", async (
                 CustomerCreateDto dto,
                  [FromServices] ICustomerService customerService, CustomerProvider customerProvider) =>
             {
@@ -38,7 +39,7 @@ namespace CustomerService.Endpoints
                     : Results.BadRequest(response);
             });
 
-            app.MapPut("/api/products/{id:int}", async (
+            app.MapPut("/api/customers/{id:int}", async (
                 int id,
                 CustomerUpdateDto dto,
                 CustomerProvider customerProvider,
@@ -51,7 +52,7 @@ namespace CustomerService.Endpoints
                     : Results.BadRequest(response);
             });
 
-            app.MapDelete("/api/products/{id:int}", async (
+            app.MapDelete("/api/customers/{id:int}", async (
                 int id,
                 CustomerProvider customerProvider,
                 [FromServices] ICustomerService customerService) =>

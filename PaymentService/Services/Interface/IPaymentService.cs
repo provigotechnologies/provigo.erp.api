@@ -18,13 +18,19 @@ namespace PaymentService.Services.Interface
             CreateOnlinePaymentAsync(PaymentTransactionRequestCreateDto request, Guid tenantId);
 
         Task<bool>
-            VerifyAndSavePaymentTransactionAsync(VerifyPaymentTransactionRequestDto dto, Guid tenantId);
+            VerifyOnlinePaymentAsync(VerifyPaymentTransactionRequestDto dto, Guid tenantId);
 
         Task<ApiResponse<PaymentDto>>
             CreateOfflinePaymentAsync(PaymentCreateDto dto, Guid tenantId);
 
         Task<ApiResponse<RefundDto>>
-            CreateRefundAsync(RefundCreateDto dto, Guid tenantId);
+            CreateOnlineRefundAsync(RefundCreateDto dto, Guid tenantId);
+
+        Task<bool>
+            VerifyOnlineRefundAsync(string gatewayRefundId, Guid tenantId);
+
+        Task<ApiResponse<RefundDto>>
+            CreateOfflineRefundAsync(RefundCreateDto dto, Guid tenantId);
     }
 }
 

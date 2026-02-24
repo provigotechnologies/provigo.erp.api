@@ -12,9 +12,7 @@ namespace ProviGo.Common.Models
 
         [Required]
         public Guid TenantId { get; set; }
-
-        [ForeignKey(nameof(TenantId))]
-        public TenantDetails TenantDetails { get; set; }
+        public Guid BranchId { get; set; }
 
         [Required, MaxLength(100)]
         public string FullName { get; set; }
@@ -30,6 +28,12 @@ namespace ProviGo.Common.Models
 
         public DateTime JoinDate { get; set; } = DateTime.UtcNow;
         public bool IsActive { get; set; }
+
+        [ForeignKey(nameof(TenantId))]
+        public TenantDetails TenantDetails { get; set; }
+
+        [ForeignKey(nameof(BranchId))]
+        public Branch Branch { get; set; }
     }
 
 }
