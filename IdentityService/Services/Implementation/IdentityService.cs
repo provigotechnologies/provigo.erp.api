@@ -8,24 +8,22 @@ using Provigo.Common.Exceptions;
 using ProviGo.Common.Models;
 using ProviGo.Common.Pagination;
 using ProviGo.Common.Response;
-using System.Security.Claims;
 
 namespace IdentityService.Services.Implementation
 {
     public class IdentityService(
         TenantDbContext db,
         IGenericRepository<User> repo,
-        TokenService tokenService,
-        IHttpContextAccessor httpContextAccessor) : IIdentityService
+        TokenService tokenService) : IIdentityService
     {
         private readonly TenantDbContext _db = db;
         private readonly IGenericRepository<User> _repo = repo;
         private readonly TokenService _tokenService = tokenService;
-        private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
+
 
         public async Task<ApiResponse<UserResponse>> RegisterAsync(
             UserCreateRequest dto,
-            List<Guid> branchIds,
+            Guid branchId,
             Guid tenantId)
         {
             try
@@ -33,6 +31,7 @@ namespace IdentityService.Services.Implementation
                 // 🔒 Duplicate email check (Tenant wise)
                 var emailExists = await _db.Users
                     .AnyAsync(u => u.Email == dto.Email
+                                && u.BranchId == branchId
                                 && u.TenantId == tenantId);
 
                 if (emailExists)
@@ -57,6 +56,7 @@ namespace IdentityService.Services.Implementation
                 {
                     UserId = Guid.NewGuid(),
                     TenantId = tenantId,
+                    BranchId = branchId,
                     FirstName = dto.FirstName,
                     LastName = dto.LastName,
                     Email = dto.Email,
@@ -70,18 +70,6 @@ namespace IdentityService.Services.Implementation
                 };
 
                 _db.Users.Add(user);
-
-                foreach (var branchId in branchIds)
-                {
-                    _db.UserBranches.Add(new UserBranch
-                    {
-                        UserId = user.UserId,
-                        BranchId = branchId,
-                        IsActive = true
-                    });
-                }
-
-                await _db.SaveChangesAsync();
 
                 int affectedRows = await _db.SaveChangesAsync();
 
@@ -118,13 +106,8 @@ namespace IdentityService.Services.Implementation
         public async Task<ApiResponse<object>> LoginAsync(LoginDto dto)
         {
             var user = await _db.Users
-             .Include(u => u.UserRole)
-             .FirstOrDefaultAsync(u => u.Email == dto.Email);
-
-            var branchIds = await _db.UserBranches
-            .Where(x => x.UserId == user.UserId && x.IsActive)
-            .Select(x => x.BranchId)
-            .ToListAsync();
+     .Include(u => u.UserRole)
+     .FirstOrDefaultAsync(u => u.Email == dto.Email);
 
             if (user == null)
                 return ApiResponseFactory.Failure<object>("Invalid credentials");
@@ -135,7 +118,7 @@ namespace IdentityService.Services.Implementation
             if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
                 return ApiResponseFactory.Failure<object>("Invalid credentials");
 
-            var token = _tokenService.Create(user, branchIds);
+            var token = _tokenService.Create(user);
 
             _db.UsersLogs.Add(new UsersLog
             {
@@ -157,19 +140,9 @@ namespace IdentityService.Services.Implementation
         {
             try
             {
-                var role = _httpContextAccessor.HttpContext?.User
-                .FindFirst(ClaimTypes.Role)?.Value;
-
                 var query = _db.Users
                     .AsNoTracking()
-                    .Where(u => u.TenantId == tenantId);
-
-                if (role != "SuperAdmin")
-                {
-                    query = query.Where(u =>
-                        u.UserBranches.Any(b =>
-                            b.BranchId == branchId && b.IsActive));
-                }
+                    .Where(u => u.TenantId == tenantId && u.BranchId == branchId);
 
                 var pagedResult = await _repo.GetPagedAsync(
                     query,
@@ -200,7 +173,7 @@ namespace IdentityService.Services.Implementation
             try
             {
                 int affectedRows = await _db.Users
-                    .Where(u => u.UserId == id && u.TenantId == tenantId)
+                    .Where(u => u.UserId == id && u.TenantId == tenantId && u.BranchId == branchId)
                     .ExecuteUpdateAsync(s => s
                         .SetProperty(u => u.FirstName, dto.FirstName)
                         .SetProperty(u => u.LastName, dto.LastName)
@@ -230,7 +203,7 @@ namespace IdentityService.Services.Implementation
             try
             {
                 var user = await _db.Users
-                    .FirstOrDefaultAsync(u => u.UserId == id && u.TenantId == tenantId);
+                    .FirstOrDefaultAsync(u => u.UserId == id && u.TenantId == tenantId && u.BranchId == branchId);
 
                 if (user == null)
                     return ApiResponseFactory.Failure<string>("User not found");

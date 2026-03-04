@@ -16,24 +16,10 @@ public static class IdentityEndpoints
         app.MapPost("/api/register", async (
             UserCreateRequest dto, 
             IIdentityService service,
-            HttpContext context,
+            Guid branchId,
             IdentityProvider tenantProvider) =>
         {
-            var branchHeader = context.Request.Headers["X-Branch-Id"].FirstOrDefault();
-
-            if (string.IsNullOrWhiteSpace(branchHeader))
-                return Results.BadRequest("Branch Id header missing");
-
-            var branchIds = branchHeader
-                .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                .Select(id => Guid.TryParse(id, out var guid) ? guid : Guid.Empty)
-                .Where(g => g != Guid.Empty)
-                .ToList();
-
-            if (!branchIds.Any())
-                return Results.BadRequest("Invalid Branch Id(s)");
-
-            var result = await service.RegisterAsync(dto, branchIds, tenantProvider.TenantId);
+            var result = await service.RegisterAsync(dto, branchId, tenantProvider.TenantId);
 
             return result.Success
                 ? Results.Created("/api/users", result)

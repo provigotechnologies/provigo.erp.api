@@ -15,6 +15,9 @@ namespace ProviGo.Common.Models
         [Required]
         public Guid TenantId { get; set; }
 
+        [Required]
+        public Guid BranchId { get; set; }
+
         [Required, MaxLength(250)]
         public string Email { get; set; } = default!;
 
@@ -45,6 +48,9 @@ namespace ProviGo.Common.Models
 
         [ForeignKey(nameof(TenantId))]
         public TenantDetails TenantDetails { get; set; }
+
+        [ForeignKey(nameof(BranchId))]
+        public Branch Branches { get; set; }
 
         [ForeignKey(nameof(RoleId))]
         public UserRole UserRole { get; set; }

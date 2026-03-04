@@ -9,7 +9,7 @@ namespace IdentityService.Services.Interface
     {
         Task<ApiResponse<UserResponse>> RegisterAsync(
             UserCreateRequest dto,
-             List<Guid> branchIds,
+            Guid branchId,
             Guid tenantId);
 
         Task<ApiResponse<object>> LoginAsync(LoginDto dto);

@@ -1188,9 +1188,6 @@ namespace IdentityService.Migrations.TenantDb
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<Guid>("BranchId")
-                        .HasColumnType("char(36)");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
@@ -1244,6 +1241,30 @@ namespace IdentityService.Migrations.TenantDb
                     b.HasIndex("TenantId");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("ProviGo.Common.Models.UserBranch", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserBranches");
                 });
 
             modelBuilder.Entity("ProviGo.Common.Models.UserRole", b =>
@@ -1744,6 +1765,17 @@ namespace IdentityService.Migrations.TenantDb
                     b.Navigation("UserRole");
                 });
 
+            modelBuilder.Entity("ProviGo.Common.Models.UserBranch", b =>
+                {
+                    b.HasOne("ProviGo.Common.Models.User", "User")
+                        .WithMany("UserBranches")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("ProviGo.Common.Models.UsersLog", b =>
                 {
                     b.HasOne("ProviGo.Common.Models.User", "User")
@@ -1803,6 +1835,8 @@ namespace IdentityService.Migrations.TenantDb
             modelBuilder.Entity("ProviGo.Common.Models.User", b =>
                 {
                     b.Navigation("Shifts");
+
+                    b.Navigation("UserBranches");
 
                     b.Navigation("UsersLogs");
                 });
