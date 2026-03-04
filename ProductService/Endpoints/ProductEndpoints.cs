@@ -19,6 +19,21 @@ namespace ProductService.Endpoints
             // 🔹 Products
             // ===========================
 
+            app.MapGet("/api/products/{id:int}", async (
+            int id,
+            bool includeInactive,
+            Guid branchId,
+            ProductProvider productProvider,
+            [FromServices] IProductService productService) =>
+            {
+                var response = await productService.GetProductByIdAsync(id, includeInactive, branchId, productProvider.TenantId);
+
+                return response.Success
+                    ? Results.Ok(response)
+                    : Results.NotFound(response);
+            });
+
+
             app.MapGet("/api/products", async (
               [AsParameters] PaginationRequest request,
               bool includeInactive,
@@ -34,9 +49,11 @@ namespace ProductService.Endpoints
 
             app.MapPost("/api/products", async (
                 ProductCreateDto dto,
-                 [FromServices] IProductService productService, ProductProvider productProvider) =>
+                Guid branchId,
+                [FromServices] IProductService productService,
+                ProductProvider productProvider) =>
             {
-                var response = await productService.CreateProductAsync(dto, productProvider.TenantId);
+                var response = await productService.CreateProductAsync(dto, branchId, productProvider.TenantId);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -45,10 +62,11 @@ namespace ProductService.Endpoints
             app.MapPut("/api/products/{id:int}", async (
                 int id,
                 ProductUpdateDto dto,
+                Guid branchId,
                 ProductProvider productProvider,
-                 [FromServices] IProductService productService) =>
+                [FromServices] IProductService productService) =>
             {
-                var response = await productService.UpdateProductAsync(id, dto, productProvider.TenantId);
+                var response = await productService.UpdateProductAsync(id, dto, branchId, productProvider.TenantId);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -56,11 +74,12 @@ namespace ProductService.Endpoints
 
             app.MapDelete("/api/products/{id:int}", async (
                 int id,
+                Guid branchId,
                 ProductProvider productProvider,
                 [FromServices] IProductService productService) =>
             {
 
-                var response = await productService.RemoveProductAsync(id, productProvider.TenantId);
+                var response = await productService.RemoveProductAsync(id, branchId, productProvider.TenantId);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);

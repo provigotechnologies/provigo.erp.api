@@ -22,6 +22,9 @@ namespace ProviGo.Common.Models
         [MaxLength(500)]
         public string Address { get; set; } = string.Empty;
 
+        [MaxLength(15)]
+        public string GSTIN { get; set; } = string.Empty;
+
         [MaxLength(500)]
         public string LogoUrl { get; set; } = string.Empty;
 

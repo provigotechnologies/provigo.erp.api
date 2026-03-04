@@ -8,21 +8,24 @@ using Provigo.Common.Exceptions;
 using ProviGo.Common.Models;
 using ProviGo.Common.Pagination;
 using ProviGo.Common.Response;
+using System.Security.Claims;
 
 namespace IdentityService.Services.Implementation
 {
     public class IdentityService(
         TenantDbContext db,
         IGenericRepository<User> repo,
-        TokenService tokenService) : IIdentityService
+        TokenService tokenService,
+        IHttpContextAccessor httpContextAccessor) : IIdentityService
     {
         private readonly TenantDbContext _db = db;
         private readonly IGenericRepository<User> _repo = repo;
         private readonly TokenService _tokenService = tokenService;
-
+        private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
 
         public async Task<ApiResponse<UserResponse>> RegisterAsync(
             UserCreateRequest dto,
+            List<Guid> branchIds,
             Guid tenantId)
         {
             try
@@ -68,6 +71,18 @@ namespace IdentityService.Services.Implementation
 
                 _db.Users.Add(user);
 
+                foreach (var branchId in branchIds)
+                {
+                    _db.UserBranches.Add(new UserBranch
+                    {
+                        UserId = user.UserId,
+                        BranchId = branchId,
+                        IsActive = true
+                    });
+                }
+
+                await _db.SaveChangesAsync();
+
                 int affectedRows = await _db.SaveChangesAsync();
 
                 if (affectedRows == 0)
@@ -103,8 +118,13 @@ namespace IdentityService.Services.Implementation
         public async Task<ApiResponse<object>> LoginAsync(LoginDto dto)
         {
             var user = await _db.Users
-     .Include(u => u.UserRole)
-     .FirstOrDefaultAsync(u => u.Email == dto.Email);
+             .Include(u => u.UserRole)
+             .FirstOrDefaultAsync(u => u.Email == dto.Email);
+
+            var branchIds = await _db.UserBranches
+            .Where(x => x.UserId == user.UserId && x.IsActive)
+            .Select(x => x.BranchId)
+            .ToListAsync();
 
             if (user == null)
                 return ApiResponseFactory.Failure<object>("Invalid credentials");
@@ -115,7 +135,7 @@ namespace IdentityService.Services.Implementation
             if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
                 return ApiResponseFactory.Failure<object>("Invalid credentials");
 
-            var token = _tokenService.Create(user);
+            var token = _tokenService.Create(user, branchIds);
 
             _db.UsersLogs.Add(new UsersLog
             {
@@ -132,13 +152,24 @@ namespace IdentityService.Services.Implementation
         public async Task<ApiResponse<List<User>>> GetUsersAsync(
             PaginationRequest request,
             bool includeInactive,
+            Guid branchId,
             Guid tenantId)
         {
             try
             {
+                var role = _httpContextAccessor.HttpContext?.User
+                .FindFirst(ClaimTypes.Role)?.Value;
+
                 var query = _db.Users
                     .AsNoTracking()
                     .Where(u => u.TenantId == tenantId);
+
+                if (role != "SuperAdmin")
+                {
+                    query = query.Where(u =>
+                        u.UserBranches.Any(b =>
+                            b.BranchId == branchId && b.IsActive));
+                }
 
                 var pagedResult = await _repo.GetPagedAsync(
                     query,
@@ -163,6 +194,7 @@ namespace IdentityService.Services.Implementation
         public async Task<ApiResponse<string>> UpdateUserAsync(
             Guid id,
             UserUpdateRequest dto,
+            Guid branchId,
             Guid tenantId)
         {
             try
@@ -193,7 +225,7 @@ namespace IdentityService.Services.Implementation
             }
         }
 
-        public async Task<ApiResponse<string>> DeleteUserAsync(Guid id, Guid tenantId)
+        public async Task<ApiResponse<string>> DeleteUserAsync(Guid id, Guid branchId, Guid tenantId)
         {
             try
             {

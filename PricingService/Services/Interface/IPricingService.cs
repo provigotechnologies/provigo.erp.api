@@ -13,7 +13,7 @@ namespace PricingService.Services.Interface
         // Discount
         Task<ApiResponse<List<Discount>>> GetDiscountsAsync(PaginationRequest request, bool includeInactive, Guid tenantId);
 
-        Task<ApiResponse<DiscountDto>> CreateDiscountAsync(DiscountCreateDto dto, Guid tenantId);
+        Task<ApiResponse<DiscountResponseDto>> CreateDiscountAsync(DiscountCreateDto dto, Guid tenantId);
 
         Task<ApiResponse<string>> UpdateDiscountAsync(int discountId, DiscountUpdateDto dto, Guid tenantId);
 
@@ -22,7 +22,7 @@ namespace PricingService.Services.Interface
         // Charge
         Task<ApiResponse<List<Charge>>> GetChargesAsync(PaginationRequest request, bool includeInactive, Guid tenantId);
 
-        Task<ApiResponse<ChargeDto>> CreateChargeAsync(ChargeCreateDto dto, Guid tenantId);
+        Task<ApiResponse<ChargeResponseDto>> CreateChargeAsync(ChargeCreateDto dto, Guid tenantId);
 
         Task<ApiResponse<string>> UpdateChargeAsync(int chargeId, ChargeUpdateDto dto, Guid tenantId);
 
@@ -31,7 +31,7 @@ namespace PricingService.Services.Interface
         // Tax
         Task<ApiResponse<List<Tax>>> GetTaxesAsync(PaginationRequest request, bool includeInactive, Guid tenantId);
 
-        Task<ApiResponse<TaxDto>> CreateTaxAsync(TaxCreateDto dto, Guid tenantId);
+        Task<ApiResponse<TaxResponseDto>> CreateTaxAsync(TaxCreateDto dto, Guid tenantId);
 
         Task<ApiResponse<string>> UpdateTaxAsync(int taxId, TaxUpdateDto dto, Guid tenantId);
 

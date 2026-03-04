@@ -10,13 +10,14 @@ public class TokenService
     private readonly IConfiguration _config;
     public TokenService(IConfiguration config) { _config = config; }
 
-    public string Create(User user)
+    public string Create(User user, List<Guid> branchIds)
     {
         var claims = new List<Claim>
     {
         new Claim("tenantId", user.TenantId.ToString()),
         new Claim("userId", user.UserId.ToString()),
         new Claim(ClaimTypes.Role, user.UserRole.RoleName),
+        new Claim("branches", string.Join(",", branchIds)),
         new Claim(ClaimTypes.Email, user.Email),
         new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
         new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())

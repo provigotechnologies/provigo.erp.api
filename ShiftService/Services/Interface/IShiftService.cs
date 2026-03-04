@@ -7,12 +7,23 @@ namespace ShiftService.Services.Interface
 {
     public interface IShiftService
     {
-        Task<ApiResponse<List<Shift>>> GetShiftsAsync(PaginationRequest request, bool includeInactive, Guid tenantId);
+        Task<ApiResponse<List<Shift>>> GetShiftsAsync(
+            PaginationRequest request,
+            bool includeInactive);
 
-        Task<ApiResponse<ShiftDto>> CreateShiftAsync(ShiftCreateDto dto, Guid tenantId);
+        Task<ApiResponse<ShiftResponseDto>> CreateShiftAsync(
+            ShiftCreateDto dto);
 
-        Task<ApiResponse<string>> UpdateShiftAsync(int shiftId, ShiftUpdateDto dto, Guid tenantId);
+        Task<ApiResponse<string>> UpdateShiftAsync(
+            int shiftId,
+            ShiftUpdateDto dto);
 
-        Task<ApiResponse<string>> RemoveShiftAsync(int shiftId, Guid tenantId);
+        Task<ApiResponse<string>> RemoveShiftAsync(
+            int shiftId);
+
+        Task<ApiResponse<string>> CreateCourseOfferingAsync(
+       CourseOfferingCreateDto dto,
+       Guid branchId,
+       Guid tenantId);
     }
 }

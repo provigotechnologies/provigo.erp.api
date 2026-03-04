@@ -13,9 +13,27 @@ public static class IdentityEndpoints
         User user = new();
 
         // User Register
-        app.MapPost("/api/register", async (UserCreateRequest dto, IIdentityService service, IdentityProvider tenantProvider) =>
+        app.MapPost("/api/register", async (
+            UserCreateRequest dto, 
+            IIdentityService service,
+            HttpContext context,
+            IdentityProvider tenantProvider) =>
         {
-            var result = await service.RegisterAsync(dto, tenantProvider.TenantId);
+            var branchHeader = context.Request.Headers["X-Branch-Id"].FirstOrDefault();
+
+            if (string.IsNullOrWhiteSpace(branchHeader))
+                return Results.BadRequest("Branch Id header missing");
+
+            var branchIds = branchHeader
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(id => Guid.TryParse(id, out var guid) ? guid : Guid.Empty)
+                .Where(g => g != Guid.Empty)
+                .ToList();
+
+            if (!branchIds.Any())
+                return Results.BadRequest("Invalid Branch Id(s)");
+
+            var result = await service.RegisterAsync(dto, branchIds, tenantProvider.TenantId);
 
             return result.Success
                 ? Results.Created("/api/users", result)
@@ -59,11 +77,12 @@ public static class IdentityEndpoints
           [AsParameters] PaginationRequest request,
           bool includeInactive,
           ClaimsPrincipal claims,
+          Guid branchId,
           IIdentityService service) =>
         {
             var tenantId = Guid.Parse(claims.FindFirst("tenantId")!.Value);
 
-            var result = await service.GetUsersAsync(request, includeInactive, tenantId);
+            var result = await service.GetUsersAsync(request, includeInactive, branchId, tenantId);
 
             return result.Success
                 ? Results.Ok(result)
@@ -75,23 +94,28 @@ public static class IdentityEndpoints
            Guid id,
            UserUpdateRequest dto,
            ClaimsPrincipal claims,
+           Guid branchId,
            IIdentityService service) =>
         {
             var tenantId = Guid.Parse(claims.FindFirst("tenantId")!.Value);
 
-            var result = await service.UpdateUserAsync(id, dto, tenantId);
+            var result = await service.UpdateUserAsync(id, dto, branchId, tenantId);
 
             return result.Success
                 ? Results.Ok(result)
                 : Results.NotFound(result);
-        }).RequireAuthorization();
+        }).RequireAuthorization(); 
 
         // Delete Users
-        app.MapDelete("/api/users/{id:guid}", async (Guid id, ClaimsPrincipal claims, IIdentityService service) =>
+        app.MapDelete("/api/users/{id:guid}", async (
+            Guid id,
+            ClaimsPrincipal claims,
+            Guid branchId,
+            IIdentityService service) =>
         {
             var tenantId = Guid.Parse(claims.FindFirst("tenantId")!.Value);
 
-            var result = await service.DeleteUserAsync(id, tenantId);
+            var result = await service.DeleteUserAsync(id, branchId, tenantId);
 
             return result.Success
                 ? Results.Ok(result)

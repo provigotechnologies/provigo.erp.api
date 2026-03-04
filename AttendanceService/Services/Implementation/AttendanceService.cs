@@ -40,7 +40,6 @@ namespace AttendanceService.Services.Implementation
                 var shift = await _db.Shifts
                     .FirstOrDefaultAsync(s =>
                         s.ShiftId == dto.ShiftId &&
-                        s.TenantId == tenantId &&
                         s.IsActive);
 
                 if (shift == null)

@@ -1,5 +1,7 @@
-﻿using IdentityService.Data;
+﻿using Humanizer;
+using IdentityService.Data;
 using IdentityService.Services;
+using Microsoft.CodeAnalysis.Operations;
 using Microsoft.EntityFrameworkCore;
 using OrderService.DTOs;
 using PaymentService.DTOs;
@@ -42,8 +44,9 @@ namespace PaymentService.Services.Implementation
 
 
         //  OFFLINE PAYMENT
-        public async Task<ApiResponse<PaymentDto>> CreateOfflinePaymentAsync(
+        public async Task<ApiResponse<PaymentResponseDto>> CreateOfflinePaymentAsync(
            PaymentCreateDto dto,
+           Guid branchId,
            Guid tenantId)
         {
             // 🔹 Add tenant header
@@ -52,12 +55,12 @@ namespace PaymentService.Services.Implementation
 
             // 🔹 Fetch order
             var response = await _httpClient.GetAsync(
-                $"{_config["Services:OrderService"]}/api/orders/{dto.OrderId}");
+             $"{_config["Services:OrderService"]}/api/orders/{dto.OrderId}?branchId={branchId}");
 
             if (!response.IsSuccessStatusCode)
                 throw new Exception($"OrderService Error: {response.StatusCode}");
 
-            var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse<List<OrderDto>>>();
+            var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse<List<OrderResponseDto>>>();
             var order = apiResponse?.Data?.FirstOrDefault();
 
             if (order == null)
@@ -66,13 +69,13 @@ namespace PaymentService.Services.Implementation
             var orderBalance = order.GrandTotal - order.PaidAmount;
 
             if (dto.PaidAmount > orderBalance)
-                return ApiResponseFactory.Failure<PaymentDto>("Paid amount exceeds order balance");
+                return ApiResponseFactory.Failure<PaymentResponseDto>("Paid amount exceeds order balance");
 
             // 🔹 Create a new payment entry for this offline payment
             var payment = new AppPayment
             {
                 TenantId = tenantId,
-                BranchId = dto.BranchId,
+                BranchId = branchId,
                 OrderId = dto.OrderId,
                 TotalAmount = orderBalance,
                 PaidAmount = dto.PaidAmount,       // only this installment
@@ -90,10 +93,10 @@ namespace PaymentService.Services.Implementation
             .SumAsync(p => p.PaidAmount);
 
             await _httpClient.PutAsJsonAsync(
-                $"{_config["Services:OrderService"]}/api/orders/{dto.OrderId}/update-payment",
-                new { PaidAmount = totalPaid });
+            $"{_config["Services:OrderService"]}/api/orders/{dto.OrderId}/update-payment?branchId={branchId}",
+            new { PaidAmount = totalPaid });
 
-            return ApiResponseFactory.Success(new PaymentDto
+            return ApiResponseFactory.Success(new PaymentResponseDto
             {
                 PaymentId = payment.PaymentId,
                 OrderId = payment.OrderId,
@@ -108,7 +111,7 @@ namespace PaymentService.Services.Implementation
 
         //  CREATE RAZORPAY ORDER  
         public async Task<PaymentTransactionResponseCreateDto> CreateOnlinePaymentAsync(
-     PaymentTransactionRequestCreateDto request, Guid tenantId)
+     PaymentTransactionCreateDto request, Guid branchId, Guid tenantId)
         {
             var key = GetKeyId();
             var secret = GetKeySecret();
@@ -119,8 +122,8 @@ namespace PaymentService.Services.Implementation
             _httpClient.DefaultRequestHeaders.Add("X-Tenant-Id", tenantId.ToString());
 
             // 🔹 Fetch order from OrderService
-            var orderResponse = await _httpClient.GetAsync(
-                $"{_config["Services:OrderService"]}/api/orders/{request.OrderId}");
+             var orderResponse = await _httpClient.GetAsync(
+                $"{_config["Services:OrderService"]}/api/orders/{request.OrderId}?branchId={branchId}");
 
             if (!orderResponse.IsSuccessStatusCode)
             {
@@ -129,7 +132,7 @@ namespace PaymentService.Services.Implementation
             }
 
             var apiOrder = await orderResponse.Content
-                .ReadFromJsonAsync<ApiResponse<List<OrderDto>>>();
+                .ReadFromJsonAsync<ApiResponse<List<OrderResponseDto>>>();
             var order = apiOrder?.Data?.FirstOrDefault();
             if (order == null)
                 throw new Exception("Order not found");
@@ -143,7 +146,7 @@ namespace PaymentService.Services.Implementation
             var onlinePayment = new AppPayment
             {
                 TenantId = tenantId,
-                BranchId = request.BranchId,
+                BranchId = branchId,
                 OrderId = request.OrderId,
                 TotalAmount = remainingBalance, // remaining balance due
                 PaidAmount = 0,                 // will update after verification
@@ -194,7 +197,7 @@ namespace PaymentService.Services.Implementation
 
         // 🔹 VERIFY ONLINE PAYMENT
         public async Task<bool> VerifyOnlinePaymentAsync(
-     VerifyPaymentTransactionRequestDto dto, Guid tenantId)
+     VerifyPaymentTransactionRequestDto dto, Guid branchId, Guid tenantId)
         {
 
             _httpClient.DefaultRequestHeaders.Remove("X-Tenant-Id");
@@ -246,8 +249,8 @@ namespace PaymentService.Services.Implementation
                 .SumAsync(p => p.PaidAmount);
 
             await _httpClient.PutAsJsonAsync(
-                $"{_config["Services:OrderService"]}/api/orders/{payment.OrderId}/update-payment",
-                new { PaidAmount = totalOrderPaid });
+            $"{_config["Services:OrderService"]}/api/orders/{payment.OrderId}/update-payment?branchId={branchId}",
+            new { PaidAmount = totalOrderPaid });
 
             return true;
         }
@@ -256,13 +259,15 @@ namespace PaymentService.Services.Implementation
         //  GET PAYMENT
         public async Task<ApiResponse<List<AppPayment>>> GetPaymentsAsync(
            PaginationRequest request,
-           bool includeInactive, Guid tenantId)
+           bool includeInactive,
+           Guid branchId, 
+           Guid tenantId)
         {
             try
             {
                 // Base query
                 var query = _db.Payments
-                    .Where(p => p.TenantId == tenantId)
+                    .Where(p => p.TenantId == tenantId && p.BranchId == branchId)
                     .AsNoTracking();
 
                 // Apply filter
@@ -283,17 +288,19 @@ namespace PaymentService.Services.Implementation
 
                 return ApiResponseFactory.Failure<List<AppPayment>>(ex.Message, ["Database error occurred"]);
 
-            }
+            }   
         }
 
 
         // 🔹 GET FULL PAYMENT HISTORY FOR AN ORDER
         public async Task<ApiResponse<List<OrderPaymentHistoryDto>>> GetOrderPaymentHistoryAsync(
-           int orderId, Guid tenantId)
+           int orderId,
+           Guid branchId, 
+           Guid tenantId)
         {
             // 1️⃣ Fetch all payments (offline + online) for this order
             var payments = await _db.Payments
-                .Where(p => p.OrderId == orderId && p.TenantId == tenantId)
+                .Where(p => p.OrderId == orderId && p.TenantId == tenantId && p.BranchId == branchId)
                 .Include(p => p.Transactions) // include online transactions
                 .OrderBy(p => p.CreatedAt)
                 .ToListAsync();
@@ -343,13 +350,13 @@ namespace PaymentService.Services.Implementation
 
 
         //  REFUND OFFLINE PAYMENT
-        public async Task<ApiResponse<RefundDto>> CreateOfflineRefundAsync(
-    RefundCreateDto dto, Guid tenantId)
+        public async Task<ApiResponse<RefundResponseDto>> CreateOfflineRefundAsync(
+        RefundCreateDto dto, Guid branchId, Guid tenantId)
         {
             try
             {
                 if (dto.RefundAmount <= 0)
-                    return ApiResponseFactory.Failure<RefundDto>("Invalid refund amount");
+                    return ApiResponseFactory.Failure<RefundResponseDto>("Invalid refund amount");
 
                 var payment = await _db.Payments
                     .Include(p => p.Refunds)
@@ -359,7 +366,7 @@ namespace PaymentService.Services.Implementation
                         p.Mode != "ONLINE");
 
                 if (payment == null)
-                    return ApiResponseFactory.Failure<RefundDto>("Offline payment not found");
+                    return ApiResponseFactory.Failure<RefundResponseDto>("Offline payment not found");
 
                 var totalRefunded = payment.Refunds
                     .Where(r => r.Status == "Success")
@@ -368,13 +375,14 @@ namespace PaymentService.Services.Implementation
                 var remainingRefundable = payment.PaidAmount - totalRefunded;
 
                 if (dto.RefundAmount > remainingRefundable)
-                    return ApiResponseFactory.Failure<RefundDto>(
+                    return ApiResponseFactory.Failure<RefundResponseDto>(
                         "Refund exceeds remaining paid amount");
 
                 // 🔹 Create Refund Record
                 var refund = new Refund
                 {
                     TenantId = tenantId,
+                    BranchId = branchId,
                     PaymentId = payment.PaymentId,
                     OrderId = payment.OrderId,
                     RefundAmount = dto.RefundAmount,
@@ -401,7 +409,7 @@ namespace PaymentService.Services.Implementation
 
                 var totalPayments = await _db.Payments
                     .Where(p => p.OrderId == payment.OrderId &&
-                                p.TenantId == tenantId)
+                                p.TenantId == tenantId && p.BranchId == branchId)
                     .SumAsync(p => p.PaidAmount);
 
                 var totalOrderRefunds = await _db.Refunds
@@ -425,12 +433,12 @@ namespace PaymentService.Services.Implementation
                 _httpClient.DefaultRequestHeaders.Add("X-Tenant-Id", tenantId.ToString());
 
                 await _httpClient.PutAsJsonAsync(
-                    $"{_config["Services:OrderService"]}/api/orders/{payment.OrderId}/update-status",
+                    $"{_config["Services:OrderService"]}/api/orders/{payment.OrderId}/update-status?branchId={branchId}",
                     new { PaymentStatus = orderStatus });
 
                 // ======================================
 
-                return ApiResponseFactory.Success(new RefundDto
+                return ApiResponseFactory.Success(new RefundResponseDto
                 {
                     RefundId = refund.RefundId,
                     PaymentId = refund.PaymentId,
@@ -442,27 +450,27 @@ namespace PaymentService.Services.Implementation
             }
             catch (Exception ex)
             {
-                return ApiResponseFactory.Failure<RefundDto>("Refund failed: " + ex.Message);
+                return ApiResponseFactory.Failure<RefundResponseDto>("Refund failed: " + ex.Message);
             }
         }
 
 
         //  REFUND ONLINE PAYMENT
-        public async Task<ApiResponse<RefundDto>> CreateOnlineRefundAsync(
-     RefundCreateDto dto, Guid tenantId)
+        public async Task<ApiResponse<RefundResponseDto>> CreateOnlineRefundAsync(
+     RefundCreateDto dto, Guid branchId, Guid tenantId)
         {
             if (dto.RefundAmount <= 0)
-                return ApiResponseFactory.Failure<RefundDto>("Invalid refund amount");
+                return ApiResponseFactory.Failure<RefundResponseDto>("Invalid refund amount");
 
             var payment = await _db.Payments
                 .Include(p => p.Transactions)
                 .FirstOrDefaultAsync(p =>
                     p.PaymentId == dto.PaymentId &&
-                    p.TenantId == tenantId &&
+                    p.TenantId == tenantId && 
                     p.Mode == "ONLINE");
 
             if (payment == null)
-                return ApiResponseFactory.Failure<RefundDto>("Online payment not found");
+                return ApiResponseFactory.Failure<RefundResponseDto>("Online payment not found");
 
             var transaction = payment.Transactions
                 .Where(t => t.Status == "Success")
@@ -470,7 +478,7 @@ namespace PaymentService.Services.Implementation
                 .FirstOrDefault();
 
             if (transaction == null)
-                return ApiResponseFactory.Failure<RefundDto>("Transaction not found");
+                return ApiResponseFactory.Failure<RefundResponseDto>("Transaction not found");
 
             var client = new RazorpayClient(GetKeyId(), GetKeySecret());
 
@@ -486,6 +494,7 @@ namespace PaymentService.Services.Implementation
             var refund = new Refund
             {
                 TenantId = tenantId,
+                BranchId = branchId,
                 PaymentId = payment.PaymentId,
                 OrderId = payment.OrderId,
                 RefundAmount = dto.RefundAmount,
@@ -499,7 +508,7 @@ namespace PaymentService.Services.Implementation
             _db.Refunds.Add(refund);
             await _db.SaveChangesAsync();
 
-            return ApiResponseFactory.Success(new RefundDto
+            return ApiResponseFactory.Success(new RefundResponseDto
             {
                 RefundId = refund.RefundId,
                 RefundAmount = refund.RefundAmount,
@@ -510,8 +519,7 @@ namespace PaymentService.Services.Implementation
 
         // 🔹 VERIFY ONLINE REFUND
         public async Task<bool> VerifyOnlineRefundAsync(
-      string gatewayRefundId,
-      Guid tenantId)
+      string gatewayRefundId, Guid branchId, Guid tenantId)
         {
             var refund = await _db.Refunds
                 .Include(r => r.Payment)
@@ -544,7 +552,7 @@ namespace PaymentService.Services.Implementation
             _httpClient.DefaultRequestHeaders.Add("X-Tenant-Id", tenantId.ToString());
 
             await _httpClient.PutAsJsonAsync(
-                $"{_config["Services:OrderService"]}/api/orders/{payment.OrderId}/update-status",
+                $"{_config["Services:OrderService"]}/api/orders/{payment.OrderId}/update-status?branchId={branchId}",
                 new { PaymentStatus = "Refunded" });
 
             return true;

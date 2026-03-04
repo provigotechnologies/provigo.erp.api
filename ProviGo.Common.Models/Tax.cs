@@ -17,6 +17,7 @@ namespace ProviGo.Common.Models
         [Required, MaxLength(50)]
         public string Name { get; set; }     // GST, VAT
 
+        [Column(TypeName = "decimal(5,2)")]
         public decimal Rate { get; set; }
         public bool IsActive { get; set; }
 

@@ -49,6 +49,7 @@ namespace ProviGo.Common.Models
         [ForeignKey(nameof(RoleId))]
         public UserRole UserRole { get; set; }
 
+        public ICollection<UserBranch> UserBranches { get; set; }
         public ICollection<Shift> Shifts { get; set; } = new List<Shift>();
 
     }

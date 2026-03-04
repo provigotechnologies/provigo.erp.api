@@ -15,16 +15,20 @@ namespace ProviGo.Common.Models
         public Guid BranchId { get; set; }
 
         [Required, MaxLength(100)]
-        public string FullName { get; set; }
+        public string CustomerName { get; set; }
 
         [MaxLength(10)]
         public string Phone { get; set; }
 
         [MaxLength(250)]
         public string Email { get; set; }
+        public string State { get; set; } = string.Empty;
 
         [MaxLength(500)]
         public string Address { get; set; }
+
+        [MaxLength(15)]
+        public string GSTIN { get; set; } = string.Empty;
 
         public DateTime JoinDate { get; set; } = DateTime.UtcNow;
         public bool IsActive { get; set; }

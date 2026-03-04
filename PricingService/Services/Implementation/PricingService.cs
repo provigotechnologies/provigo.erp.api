@@ -22,16 +22,17 @@ namespace PricingService.Services.Implementation
         private readonly IGenericRepository<Tax> _taxRepo = taxRepo;
 
         // Discount
-        public async Task<ApiResponse<DiscountDto>> CreateDiscountAsync(DiscountCreateDto dto, Guid tenantId)
+        public async Task<ApiResponse<DiscountResponseDto>> CreateDiscountAsync(DiscountCreateDto dto, Guid tenantId)
         {
             try
             {
 
                 var exists = await _db.Discounts
-            .AnyAsync(d => d.TenantId == tenantId && d.Name == dto.Name);
+                .AnyAsync(d => d.TenantId == tenantId &&
+                      d.Name.ToLower() == dto.Name.ToLower());
 
                 if (exists)
-                    return ApiResponseFactory.Failure<DiscountDto>("Discount already exists");
+                    return ApiResponseFactory.Failure<DiscountResponseDto>("Discount already exists");
 
                 var discount = new Discount
                 {
@@ -46,9 +47,9 @@ namespace PricingService.Services.Implementation
                 int affectedRows = await _db.SaveChangesAsync();
 
                 if (affectedRows == 0)
-                    return ApiResponseFactory.Failure<DiscountDto>("Insert failed");
+                    return ApiResponseFactory.Failure<DiscountResponseDto>("Insert failed");
 
-                var responseDto = new DiscountDto
+                var responseDto = new DiscountResponseDto
                 {
                     DiscountId = discount.DiscountId,
                     TenantId = discount.TenantId,
@@ -63,7 +64,7 @@ namespace PricingService.Services.Implementation
             catch (DbUpdateException ex)
             {
 
-                return ApiResponseFactory.Failure<DiscountDto>("Database error occurred");
+                return ApiResponseFactory.Failure<DiscountResponseDto>("Database error occurred");
 
             }
 
@@ -169,7 +170,7 @@ namespace PricingService.Services.Implementation
 
 
         // Charge
-        public async Task<ApiResponse<ChargeDto>> CreateChargeAsync(ChargeCreateDto dto, Guid tenantId)
+        public async Task<ApiResponse<ChargeResponseDto>> CreateChargeAsync(ChargeCreateDto dto, Guid tenantId)
         {
             try
             {
@@ -178,7 +179,7 @@ namespace PricingService.Services.Implementation
             .AnyAsync(d => d.TenantId == tenantId && d.Name == dto.Name);
 
                 if (exists)
-                    return ApiResponseFactory.Failure<ChargeDto>("Charge already exists");
+                    return ApiResponseFactory.Failure<ChargeResponseDto>("Charge already exists");
 
                 var charge = new Charge
                 {
@@ -193,9 +194,9 @@ namespace PricingService.Services.Implementation
                 int affectedRows = await _db.SaveChangesAsync();
 
                 if (affectedRows == 0)
-                    return ApiResponseFactory.Failure<ChargeDto>("Insert failed");
+                    return ApiResponseFactory.Failure<ChargeResponseDto>("Insert failed");
 
-                var responseDto = new ChargeDto
+                var responseDto = new ChargeResponseDto
                 {
                     ChargeId = charge.ChargeId,
                     TenantId = charge.TenantId,
@@ -210,7 +211,7 @@ namespace PricingService.Services.Implementation
             catch (DbUpdateException ex)
             {
 
-                return ApiResponseFactory.Failure<ChargeDto>("Database error occurred");
+                return ApiResponseFactory.Failure<ChargeResponseDto>("Database error occurred");
 
             }
 
@@ -316,7 +317,7 @@ namespace PricingService.Services.Implementation
 
 
         // Tax
-        public async Task<ApiResponse<TaxDto>> CreateTaxAsync(TaxCreateDto dto, Guid tenantId)
+        public async Task<ApiResponse<TaxResponseDto>> CreateTaxAsync(TaxCreateDto dto, Guid tenantId)
         {
             try
             {
@@ -325,7 +326,7 @@ namespace PricingService.Services.Implementation
             .AnyAsync(d => d.TenantId == tenantId && d.Name == dto.Name);
 
                 if (exists)
-                    return ApiResponseFactory.Failure<TaxDto>("Tax already exists");
+                    return ApiResponseFactory.Failure<TaxResponseDto>("Tax already exists");
 
                 var tax = new Tax
                 {
@@ -339,9 +340,9 @@ namespace PricingService.Services.Implementation
                 int affectedRows = await _db.SaveChangesAsync();
 
                 if (affectedRows == 0)
-                    return ApiResponseFactory.Failure<TaxDto>("Insert failed");
+                    return ApiResponseFactory.Failure<TaxResponseDto>("Insert failed");
 
-                var responseDto = new TaxDto
+                var responseDto = new TaxResponseDto
                 {
                     TaxId = tax.TaxId,
                     TenantId = tax.TenantId,
@@ -355,7 +356,7 @@ namespace PricingService.Services.Implementation
             catch (DbUpdateException ex)
             {
 
-                return ApiResponseFactory.Failure<TaxDto>("Database error occurred");
+                return ApiResponseFactory.Failure<TaxResponseDto>("Database error occurred");
 
             }
 

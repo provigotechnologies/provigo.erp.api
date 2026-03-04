@@ -1,11 +1,13 @@
 ﻿using IdentityService.Data;
-using ShiftService.Services.Interface;
-using ShiftService.DTOs;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Operations;
 using Microsoft.EntityFrameworkCore;
 using Provigo.Common.Exceptions;
 using ProviGo.Common.Models;
 using ProviGo.Common.Pagination;
 using ProviGo.Common.Response;
+using ShiftService.DTOs;
+using ShiftService.Services.Interface;
 
 namespace ShiftService.Services.Implementation
 {
@@ -16,179 +18,205 @@ namespace ShiftService.Services.Implementation
         private readonly TenantDbContext _db = db;
         private readonly IGenericRepository<Shift> _repo = repo;
 
-        public async Task<ApiResponse<ShiftDto>> CreateShiftAsync(ShiftCreateDto dto, Guid tenantId)
+        public async Task<ApiResponse<ShiftResponseDto>> CreateShiftAsync(ShiftCreateDto dto)
         {
             try
             {
-
-                // 1️⃣ Validate Product belongs to tenant
-                var shiftExists = await _db.Products
-                    .AnyAsync(p => p.ProductId == dto.ProductId
-                                && p.TenantId == tenantId);
-
-                if (!shiftExists)
-                    return ApiResponseFactory.Failure<ShiftDto>(
-                        "Invalid product for this tenant."
-                    );
-
-                // 2️⃣ Validate Trainer belongs to tenant
-                var trainerExists = await _db.Users
-                    .AnyAsync(u => u.UserId == dto.TrainerId
-                                && u.TenantId == tenantId);
-
-                if (!trainerExists)
-                    return ApiResponseFactory.Failure<ShiftDto>(
-                        "Invalid trainer for this tenant."
-                    );
-
-                // 3️⃣ Case-insensitive duplicate check
                 var exists = await _db.Shifts
-                    .AnyAsync(s => s.TenantId == tenantId &&
-                                   s.ShiftName.ToLower() == dto.ShiftName.ToLower());
+                    .AnyAsync(s => s.ShiftName.ToLower() == dto.ShiftName.ToLower());
 
                 if (exists)
-                {
-                    return ApiResponseFactory.Failure<ShiftDto>(
-                        "Shift already exists for this tenant."
+                    return ApiResponseFactory.Failure<ShiftResponseDto>(
+                        "Shift already exists."
                     );
-                }
 
-                // 4️⃣ Create shift
                 var shift = new Shift
                 {
-                    TenantId = tenantId,
-                    ProductId = dto.ProductId,
-                    TrainerId = dto.TrainerId,
                     ShiftName = dto.ShiftName.Trim(),
-                    IsActive = dto.IsActive,
-                    CreatedOn = DateTime.UtcNow
+                    IsActive = dto.IsActive
                 };
 
                 _db.Shifts.Add(shift);
                 await _db.SaveChangesAsync();
 
-                var responseDto = new ShiftDto
+                return ApiResponseFactory.Success(new ShiftResponseDto
                 {
                     ShiftId = shift.ShiftId,
-                    TenantId = shift.TenantId,
-                    ProductId = shift.ProductId,
-                    TrainerId = shift.TrainerId,
                     ShiftName = shift.ShiftName,
-                    IsActive = shift.IsActive,
-                    CreatedOn = shift.CreatedOn
-                };
-
-                return ApiResponseFactory.Success(responseDto, "Shift created successfully");
-            }
-            catch (DbUpdateException)
-            {
-                return ApiResponseFactory.Failure<ShiftDto>(
-                    "Database constraint error occurred."
-                );
+                    IsActive = shift.IsActive
+                }, "Shift created successfully");
             }
             catch (Exception ex)
             {
-                return ApiResponseFactory.Failure<ShiftDto>(
-                    "Unexpected error occurred.",
+                return ApiResponseFactory.Failure<ShiftResponseDto>(
+                    "Error creating shift",
                     new List<string> { ex.Message }
                 );
             }
         }
 
-
         public async Task<ApiResponse<List<Shift>>> GetShiftsAsync(
-            PaginationRequest request,
-            bool includeInactive, Guid tenantId)
+    PaginationRequest request,
+    bool includeInactive)
         {
             try
             {
-                // Base query
                 var query = _db.Shifts.AsNoTracking();
 
-                // Apply filter
                 var pagedResult = await _repo.GetPagedAsync(
                     query,
                     request,
                     i => includeInactive || i.IsActive
                 );
 
-                // Wrap with standard response
                 return ApiResponseFactory.PagedSuccess(
                     pagedResult,
-                    "Shift fetched successfully"
+                    "Shifts fetched successfully"
                 );
             }
             catch (Exception ex)
             {
-
-                return ApiResponseFactory.Failure<List<Shift>>(ex.Message, ["Database error occurred"]);
-
+                return ApiResponseFactory.Failure<List<Shift>>(
+                    "Database error occurred",
+                    new List<string> { ex.Message });
             }
         }
 
-        public async Task<ApiResponse<string>> UpdateShiftAsync(int shiftId, ShiftUpdateDto dto, Guid tenantId)
+
+        public async Task<ApiResponse<string>> UpdateShiftAsync(
+     int shiftId,
+     ShiftUpdateDto dto)
         {
             try
             {
+                var exists = await _db.Shifts
+                    .AnyAsync(s => s.ShiftName.ToLower() == dto.ShiftName.ToLower()
+                                && s.ShiftId != shiftId);
+
+                if (exists)
+                    return ApiResponseFactory.Failure<string>(
+                        "Shift name already exists.");
+
                 int affectedRows = await _db.Shifts
-                    .Where(i => i.ShiftId == shiftId && i.TenantId == tenantId).ExecuteUpdateAsync(s => s
-                    .SetProperty(i => i.ProductId, dto.ProductId)
-                    .SetProperty(i => i.TrainerId, dto.TrainerId)
-                    .SetProperty(i => i.ShiftName, dto.ShiftName)
-                    .SetProperty(i => i.IsActive, dto.IsActive)
-                );
+                    .Where(s => s.ShiftId == shiftId)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(i => i.ShiftName, dto.ShiftName.Trim())
+                        .SetProperty(i => i.IsActive, dto.IsActive)
+                    );
+
                 if (affectedRows == 0)
-                {
                     throw new NotFoundException("Shift not found");
-                    //return ApiResponseFactory.Failure<string>("Institute not found");
-                    // return ApiResponseFactory.Failure<string>("Update failed");
-                }
 
                 return ApiResponseFactory.Success("Shift updated successfully");
             }
-            catch (DbUpdateException)
+            catch (Exception ex)
             {
-
-                return ApiResponseFactory.Failure<string>("Database error occurred");
-
+                return ApiResponseFactory.Failure<string>(
+                    "Error updating shift",
+                    new List<string> { ex.Message });
             }
-
         }
 
-        public async Task<ApiResponse<string>> RemoveShiftAsync(int shiftId, Guid tenantId)
+
+        public async Task<ApiResponse<string>> RemoveShiftAsync(int shiftId)
         {
             try
             {
-                var shift = await _db.Shifts.FindAsync(shiftId);
+                var shift = await _db.Shifts
+                    .FirstOrDefaultAsync(s => s.ShiftId == shiftId);
 
                 if (shift == null)
-                {
-                    return ApiResponseFactory.Failure<string>("Product not found");
-                }
+                    return ApiResponseFactory.Failure<string>("Shift not found");
 
                 _db.Shifts.Remove(shift);
-                int affectedRows = await _db.SaveChangesAsync();
-
-                if (affectedRows == 0)
-                {
-                    return ApiResponseFactory.Failure<string>("Delete failed");
-                }
+                await _db.SaveChangesAsync();
 
                 return ApiResponseFactory.Success(
-                    $"Shift {shiftId} deleted successfully"
-                );
+                    $"Shift {shiftId} deleted successfully");
             }
             catch (Exception ex)
             {
                 return ApiResponseFactory.Failure<string>(
                     "Database error occurred",
-                    new List<string> { ex.Message }
-                );
+                    new List<string> { ex.Message });
             }
         }
 
-   
+
+        public async Task<ApiResponse<string>> CreateCourseOfferingAsync(
+    CourseOfferingCreateDto dto,
+    Guid branchId,
+    Guid tenantId)
+        {
+            try
+            {
+                // 1️⃣ Validate TrainerCourse Mapping
+                var mapping = await _db.TrainerCourses
+                    .FirstOrDefaultAsync(x =>
+                        x.TrainerCourseId == dto.TrainerCourseId &&
+                        x.TenantId == tenantId &&
+                        x.BranchId == branchId &&
+                        x.IsActive);
+
+                if (mapping == null)
+                    return ApiResponseFactory.Failure<string>(
+                        "Invalid trainer-course mapping");
+
+                // 2️⃣ Validate Shift
+                var shiftExists = await _db.Shifts
+                    .AnyAsync(s => s.ShiftId == dto.ShiftId && s.IsActive);
+
+                if (!shiftExists)
+                    return ApiResponseFactory.Failure<string>("Invalid shift");
+
+                // 3️⃣ Validate Time Logic
+                if (dto.EndTime <= dto.StartTime)
+                    return ApiResponseFactory.Failure<string>(
+                        "End time must be greater than start time");
+
+                // 4️⃣ Prevent Trainer Overlap (IMPORTANT)
+                var overlap = await _db.CourseOfferings
+                    .Include(o => o.TrainerCourse)
+                    .AnyAsync(o =>
+                        o.TrainerCourse.TrainerId == mapping.TrainerId &&
+                        o.BranchId == branchId &&
+                        o.TenantId == tenantId &&
+                        o.IsActive &&
+                        (
+                            dto.StartTime < o.EndTime &&
+                            dto.EndTime > o.StartTime
+                        )
+                    );
+
+                if (overlap)
+                    return ApiResponseFactory.Failure<string>(
+                        "Trainer already assigned during this time");
+
+                // 5️⃣ Create Offering
+                var offering = new CourseOffering
+                {
+                    TrainerCourseId = dto.TrainerCourseId,
+                    ShiftId = dto.ShiftId,
+                    StartTime = dto.StartTime,
+                    EndTime = dto.EndTime,
+                    BranchId = branchId,
+                    TenantId = tenantId,
+                    IsActive = true
+                };
+
+                _db.CourseOfferings.Add(offering);
+                await _db.SaveChangesAsync();
+
+                return ApiResponseFactory.Success("Course offering created successfully");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponseFactory.Failure<string>(
+                    "Error creating course offering",
+                    new List<string> { ex.Message });
+            }
+        }
 
     }
 
-    }
+}

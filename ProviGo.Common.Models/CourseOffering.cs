@@ -1,0 +1,30 @@
+﻿using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace ProviGo.Common.Models
+{
+    [Table("CourseOfferings")]
+    public class CourseOffering
+    {
+        [Key]
+        public int OfferingId { get; set; }
+
+        public Guid TenantId { get; set; }
+        public Guid BranchId { get; set; }
+
+        public int TrainerCourseId { get; set; }
+        public int ShiftId { get; set; }
+
+        public TimeSpan StartTime { get; set; }
+        public TimeSpan EndTime { get; set; }
+
+        public bool IsActive { get; set; } = true;
+
+        [ForeignKey(nameof(TrainerCourseId))]
+        public TrainerCourse TrainerCourse { get; set; }
+
+        [ForeignKey(nameof(ShiftId))]
+        public Shift Shift { get; set; }
+    }
+}

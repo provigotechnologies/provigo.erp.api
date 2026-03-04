@@ -17,6 +17,7 @@ var builder = WebApplication.CreateBuilder(args);
 // 🔹 Application Services
 
 builder.Services.AddScoped<IProductService, ProductService.Services.Implementation.ProductService>();
+builder.Services.AddScoped<ITrainerCourseService, TrainerCourseService>();
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
 builder.Services.AddScoped<ProductProvider>();
@@ -163,5 +164,6 @@ app.UseMiddleware<ProductMiddleware>();  // After Auth, Before Authorization
 app.UseStaticFiles();
 
 ProductEndpoints.Map(app);
+TrainerCourseEndpoints.Map(app);
 
 app.Run();

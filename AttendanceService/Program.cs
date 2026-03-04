@@ -32,9 +32,6 @@ builder.Services.AddDbContext<MasterDbContext>(options =>
 // ✅ Tenant DB
 builder.Services.AddDbContext<TenantDbContext>();
 
-builder.Services.AddScoped<IAttendanceProvider,
-    AttendanceService.Services.Implementation.AttendanceService>();
-
 builder.Services.AddScoped(typeof(IGenericRepository<>),
                            typeof(GenericRepository<>));
 

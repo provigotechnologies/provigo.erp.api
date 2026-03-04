@@ -1,5 +1,6 @@
 ﻿using IdentityService.Data;
 using IdentityService.Services;
+using Microsoft.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using ProductService.DTOs;
 using ProductService.Services.Interface;
@@ -17,17 +18,22 @@ namespace ProductService.Services.Implementation
         private readonly TenantDbContext _db = db;
         private readonly IGenericRepository<Product> _repo = repo;
 
-        public async Task<ApiResponse<ProductDto>> CreateProductAsync(ProductCreateDto dto, Guid tenantId)
+        public async Task<ApiResponse<ProductResponseDto>> CreateProductAsync(
+            ProductCreateDto dto, 
+            Guid branchId, 
+            Guid tenantId)
         {
             try
             {
 
                 var exists = await _db.Products
-                    .AnyAsync(p => p.TenantId == tenantId && p.ProductName == dto.ProductName);
+                    .AnyAsync(p => p.TenantId == tenantId && 
+                    p.BranchId == branchId &&
+                    p.ProductName == dto.ProductName);
 
                 if (exists)
                 {
-                    return ApiResponseFactory.Failure<ProductDto>(
+                    return ApiResponseFactory.Failure<ProductResponseDto>(
                         "This product already exists for the selected institute."
                     );
                 }
@@ -36,7 +42,7 @@ namespace ProductService.Services.Implementation
                 var product = new Product
                 {
                     TenantId = tenantId,
-                    BranchId = dto.BranchId,
+                    BranchId = branchId,
                     ProductName = dto.ProductName,
                     TotalFee = dto.TotalFee,
                     IsActive = true,
@@ -47,9 +53,9 @@ namespace ProductService.Services.Implementation
                 int affectedRows = await _db.SaveChangesAsync();
 
                 if (affectedRows == 0)
-                    return ApiResponseFactory.Failure<ProductDto>("Insert failed");
+                    return ApiResponseFactory.Failure<ProductResponseDto>("Insert failed");
 
-                var responseDto = new ProductDto
+                var responseDto = new ProductResponseDto
                 {
                     ProductId = product.ProductId,
                     TenantId = product.TenantId,
@@ -63,7 +69,7 @@ namespace ProductService.Services.Implementation
             }
             catch (DbUpdateException ex)
             {
-                return ApiResponseFactory.Failure<ProductDto>("Database error occurred");
+                return ApiResponseFactory.Failure<ProductResponseDto>("Database error occurred");
             }
 
         }
@@ -79,7 +85,7 @@ namespace ProductService.Services.Implementation
                 var query = _db.Products
                     .Where(p =>
                         p.TenantId == tenantId &&
-                        p.BranchId == branchId)  
+                        p.BranchId == branchId)
                     .AsNoTracking();
 
                 var pagedResult = await _repo.GetPagedAsync(
@@ -102,15 +108,58 @@ namespace ProductService.Services.Implementation
         }
 
 
+        public async Task<ApiResponse<ProductResponseDto>> GetProductByIdAsync(
+       int productId,
+       bool includeInactive,
+       Guid branchId,
+       Guid tenantId)
+        {
+            try
+            {
+                var product = await _db.Products
+                    .AsNoTracking()
+                    .Where(c =>
+                        c.ProductId == productId &&
+                        c.BranchId == branchId &&
+                        c.TenantId == tenantId)
+                    .Where(c => includeInactive || c.IsActive)
+                    .Select(c => new ProductResponseDto
+                    {
+                        ProductId = c.ProductId,
+                        ProductName = c.ProductName,
+                        IsActive = c.IsActive
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (product == null)
+                    return ApiResponseFactory.Failure<ProductResponseDto>(
+                        "Product not found");
+
+                return ApiResponseFactory.Success(
+                    product,
+                    "Product fetched successfully");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponseFactory.Failure<ProductResponseDto>(
+                    ex.Message,
+                    ["Database error occurred"]);
+            }
+        }
+
+
+
         public async Task<ApiResponse<string>> UpdateProductAsync(
         int productId,
         ProductUpdateDto dto,
+        Guid branchId,
         Guid tenantId)
         {
             try
             {
                 var exists = await _db.Products.AnyAsync(p =>
                     p.TenantId == tenantId &&
+                    p.BranchId == branchId &&
                     p.ProductName == dto.ProductName &&
                     p.ProductId != productId);
 
@@ -119,7 +168,8 @@ namespace ProductService.Services.Implementation
 
                 int affectedRows = await _db.Products
                     .Where(p => p.ProductId == productId &&
-                                p.TenantId == tenantId)
+                                p.TenantId == tenantId &&
+                                p.BranchId == branchId)
                     .ExecuteUpdateAsync(s => s
                         .SetProperty(i => i.ProductName, dto.ProductName)
                         .SetProperty(i => i.TotalFee, dto.TotalFee)
@@ -138,13 +188,18 @@ namespace ProductService.Services.Implementation
         }
 
 
-        public async Task<ApiResponse<string>> RemoveProductAsync(int productId, Guid tenantId)
+        public async Task<ApiResponse<string>> RemoveProductAsync(
+            int productId,
+            Guid branchId, 
+            Guid tenantId)
         {
             try
             {
                 var product = await _db.Products
-                    .FirstOrDefaultAsync(p => p.ProductId == productId
-                                           && p.TenantId == tenantId);
+                    .FirstOrDefaultAsync(p => p.ProductId == productId &&
+                                 p.BranchId == branchId && 
+                                 p.TenantId == tenantId);
+
                 if (product == null)
                 {
                     return ApiResponseFactory.Failure<string>("Product not found");
@@ -171,7 +226,5 @@ namespace ProductService.Services.Implementation
             }
         }
 
-
-       
     }
 }

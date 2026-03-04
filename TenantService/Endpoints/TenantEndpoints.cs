@@ -101,67 +101,7 @@ namespace TenantService.Endpoints
             });
 
 
-            // ===========================
-            // 🔹 BRANCHES
-            // ===========================
-
-            app.MapGet("/api/branches", async (
-                [AsParameters] PaginationRequest request,
-                bool includeInactive,
-                [FromServices] TenantProvider tenantProvider,
-                IBranchService branchService) =>
-            {
-                var response = await branchService.GetBranchesAsync(request, includeInactive, tenantProvider.TenantId);
-                return Results.Ok(response);
-            });
-
-            /*  app.MapGet("/api/tenants/{tenantId:guid}/branches/{branchId:guid}",
-                  async (Guid tenantId,
-                         Guid branchId,
-                         TenantProvider productProvider,
-                         IBranchService branchService) =>
-                  {
-                      var response = await branchService
-                          .GetBranchByIdAsync(branchId, );
-
-                      return response.Success
-                          ? Results.Ok(response)
-                          : Results.NotFound(response);
-                  });*/
-
-            app.MapPost("/api/branches", async (
-                BranchCreateDto dto,
-                [FromServices] TenantProvider tenantProvider,
-                IBranchService branchService) =>
-            {
-                var response = await branchService.CreateBranchAsync(dto, tenantProvider.TenantId);
-                return response.Success
-                    ? Results.Ok(response)
-                    : Results.BadRequest(response);
-            });
-
-            app.MapPut("/api/branches/{branchId:guid}", async (
-                Guid branchId,
-                BranchUpdateDto dto,
-                [FromServices] TenantProvider tenantProvider,
-                IBranchService branchService) =>
-            {
-                var response = await branchService.UpdateBranchAsync(branchId, dto, tenantProvider.TenantId);
-                return response.Success
-                    ? Results.Ok(response)
-                    : Results.BadRequest(response);
-            });
-
-            app.MapDelete("/api/branches/{branchId:guid}", async (
-                Guid branchId,
-                [FromServices] TenantProvider tenantProvider,
-                IBranchService branchService) =>
-            {
-                var response = await branchService.RemoveBranchAsync(branchId, tenantProvider.TenantId);
-                return response.Success
-                    ? Results.Ok(response)
-                    : Results.BadRequest(response);
-            });
+      
         }
     }
 }

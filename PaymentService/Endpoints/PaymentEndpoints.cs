@@ -15,23 +15,25 @@ namespace PaymentService.Endpoints
             app.MapGet("/api/payments", async (
                 [AsParameters] PaginationRequest request,
                 bool includeInactive,
+                Guid branchId,
                 PaymentProvider paymentProvider,
                  [FromServices] IPaymentService paymentService) =>
             {
-                var response = await paymentService.GetPaymentsAsync(request, includeInactive, paymentProvider.TenantId);
+                var response = await paymentService.GetPaymentsAsync(request, includeInactive, branchId, paymentProvider.TenantId);
                 return Results.Ok(response);
             });
 
 
             app.MapPost("/api/paymentTransactions",
-                async ([FromBody] PaymentTransactionRequestCreateDto req,
-                       PaymentProvider paymentProvider,
-                       IPaymentService service) => {
+                async ([FromBody] PaymentTransactionCreateDto req,
+                Guid branchId,
+                PaymentProvider paymentProvider,
+                IPaymentService service) => {
                 try
                 {
                     if (req.Amount <= 0) return Results.BadRequest(new { message = "Invalid amount" });
 
-                    var resp = await service.CreateOnlinePaymentAsync(req, paymentProvider.TenantId);
+                    var resp = await service.CreateOnlinePaymentAsync(req, branchId, paymentProvider.TenantId);
                                return Results.Ok(resp);
                 }
                 catch (Exception ex)
@@ -44,6 +46,7 @@ namespace PaymentService.Endpoints
             app.MapPost("/api/payments",
             async (PaymentCreateDto dto,
                    IPaymentService service,
+                   Guid branchId,
                    PaymentProvider paymentProvider,
                    HttpContext context) =>
             {
@@ -52,7 +55,7 @@ namespace PaymentService.Endpoints
                     if (dto.PaidAmount <= 0)
                         return Results.BadRequest(new { message = "Invalid amount" });
 
-                    var result = await service.CreateOfflinePaymentAsync(dto, paymentProvider.TenantId);
+                    var result = await service.CreateOfflinePaymentAsync(dto, branchId, paymentProvider.TenantId);
 
                     if (!result.Success)
                         return Results.BadRequest(result);
@@ -69,9 +72,10 @@ namespace PaymentService.Endpoints
             app.MapPost("/api/paymentTransaction/verify",
             async (VerifyPaymentTransactionRequestDto dto,
            IPaymentService service,
+           Guid branchId,
            PaymentProvider paymentProvider) =>
             {
-                var ok = await service.VerifyOnlinePaymentAsync(dto, paymentProvider.TenantId);
+                var ok = await service.VerifyOnlinePaymentAsync(dto, branchId, paymentProvider.TenantId);
 
                 if (ok) return Results.Ok(new { status = "success" });
                 return Results.BadRequest(new { status = "failed" });
@@ -81,6 +85,7 @@ namespace PaymentService.Endpoints
             app.MapPost("/api/payments/refunds/online",
              async ([FromBody] RefundCreateDto dto,
                     IPaymentService service,
+                    Guid branchId,
                     PaymentProvider paymentProvider) =>
              {
                  if (dto.RefundAmount <= 0)
@@ -89,7 +94,7 @@ namespace PaymentService.Endpoints
                  if (paymentProvider.TenantId == Guid.Empty)
                      return Results.Unauthorized();
 
-                 var result = await service.CreateOnlineRefundAsync(dto, paymentProvider.TenantId);
+                 var result = await service.CreateOnlineRefundAsync(dto, branchId, paymentProvider.TenantId);
 
                  return result.Success
                      ? Results.Ok(result)
@@ -100,6 +105,7 @@ namespace PaymentService.Endpoints
             app.MapPost("/api/payments/refunds/verify",
             async (string gatewayRefundId,
                    IPaymentService service,
+                   Guid branchId,
                    PaymentProvider paymentProvider) =>
             {
                 if (paymentProvider.TenantId == Guid.Empty)
@@ -107,6 +113,7 @@ namespace PaymentService.Endpoints
 
                 var ok = await service.VerifyOnlineRefundAsync(
                     gatewayRefundId,
+                    branchId,
                     paymentProvider.TenantId);
 
                 if (ok)
@@ -119,6 +126,7 @@ namespace PaymentService.Endpoints
             app.MapPost("/api/payments/refunds/offline",
             async ([FromBody] RefundCreateDto dto,
                    IPaymentService service,
+                   Guid branchId,
                    PaymentProvider paymentProvider) =>
             {
                 if (dto.RefundAmount <= 0)
@@ -127,7 +135,7 @@ namespace PaymentService.Endpoints
                 if (paymentProvider.TenantId == Guid.Empty)
                     return Results.Unauthorized();
 
-                var result = await service.CreateOfflineRefundAsync(dto, paymentProvider.TenantId);
+                var result = await service.CreateOfflineRefundAsync(dto, branchId, paymentProvider.TenantId);
 
                 return result.Success
                     ? Results.Ok(result)

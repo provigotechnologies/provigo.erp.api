@@ -48,7 +48,7 @@ public static class OrderCalculation
         var tempOrderDiscounts = discountsFromDb.Select(d => new OrderDiscount
         {
             DiscountId = d.DiscountId,
-            DiscountAmount = tempSubTotal * d.Value / 100m  
+            DiscountAmount = tempSubTotal * d.Value / 100m
         }).ToList();
         decimal tempDiscountTotal = tempOrderDiscounts.Sum(d => d.DiscountAmount);
 

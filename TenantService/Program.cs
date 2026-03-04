@@ -163,5 +163,6 @@ app.UseMiddleware<TenantMiddleware>();  // After Auth, Before Authorization
 app.UseStaticFiles();
 
 TenantEndpoints.Map(app);
+BranchEndpoints.Map(app);
 
 app.Run();

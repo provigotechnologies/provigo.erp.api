@@ -18,6 +18,24 @@ namespace ProviGo.Common.Models
         [MaxLength(150)]
         public string BranchName { get; set; }
 
+        [MaxLength(10)]
+        public string BranchCode { get; set; } = "";
+
+        [MaxLength(15)]
+        public string GSTIN { get; set; } = string.Empty;
+
+        [MaxLength(100)]
+        public string State { get; set; } = string.Empty;
+
+        [MaxLength(5)]
+        public string StateCode { get; set; } = string.Empty;
+
+        [MaxLength(100)]
+        public string Country { get; set; } = string.Empty;
+
+        [MaxLength(5)]
+        public string CountryCode { get; set; } = string.Empty;
+
         public string Address { get; set; }
 
         public bool IsActive { get; set; } = true;
@@ -25,10 +43,10 @@ namespace ProviGo.Common.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+
         [ForeignKey(nameof(TenantId))]
         public TenantDetails TenantDetails { get; set; }
 
-        // 🔗 One Branch → Many Orders
         public ICollection<Order> Orders { get; set; }
     }
 }

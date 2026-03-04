@@ -70,7 +70,7 @@ builder.Services.AddScoped<IIdentityProvider>(sp => sp.GetRequiredService<Identi
 builder.Services.AddScoped<TokenService>();
 
 builder.Services.AddMemoryCache();
-
+builder.Services.AddHttpContextAccessor();
 
 // Swagger (JWT + Tenant Header)
 builder.Services.AddEndpointsApiExplorer();
@@ -148,7 +148,8 @@ app.UseCors("AllowAngularApp");
 
 app.UseAuthentication();
 
-app.UseMiddleware<IdentityMiddleware>(); // AFTER Auth, BEFORE Authorization
+app.UseMiddleware<IdentityMiddleware>();
+app.UseMiddleware<BranchAccessMiddleware>();
 
 app.UseAuthorization();
 

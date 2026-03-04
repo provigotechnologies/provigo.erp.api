@@ -15,8 +15,22 @@ namespace CustomerService.Endpoints
         public static void Map(WebApplication app)
         {
             // ===========================
-            // 🔹 Products
+            // 🔹 Customers
             // ===========================
+
+            app.MapGet("/api/customers/{id:int}", async (
+            int id,
+            bool includeInactive,
+            Guid branchId,
+            CustomerProvider customerProvider,
+            [FromServices] ICustomerService customerService) =>
+            {
+                var response = await customerService.GetCustomerByIdAsync(id, includeInactive, branchId, customerProvider.TenantId);
+
+                return response.Success
+                    ? Results.Ok(response)
+                    : Results.NotFound(response);
+            });
 
             app.MapGet("/api/customers", async (
                 [AsParameters] PaginationRequest request,
@@ -25,15 +39,18 @@ namespace CustomerService.Endpoints
                 CustomerProvider customerProvider,
                  [FromServices] ICustomerService customerService) =>
             {
-                var response = await customerService.GetCustomersAsync(request, includeInactive, customerProvider.TenantId, branchId);
+                var response = await customerService.GetCustomersAsync(request, includeInactive, branchId, customerProvider.TenantId);
                 return Results.Ok(response);
             });
 
+
             app.MapPost("/api/customers", async (
                 CustomerCreateDto dto,
-                 [FromServices] ICustomerService customerService, CustomerProvider customerProvider) =>
+                Guid branchId,
+                 [FromServices] ICustomerService customerService, 
+                 CustomerProvider customerProvider) =>
             {
-                var response = await customerService.CreateCustomerAsync(dto, customerProvider.TenantId);
+                var response = await customerService.CreateCustomerAsync(dto, branchId, customerProvider.TenantId);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -42,11 +59,12 @@ namespace CustomerService.Endpoints
             app.MapPut("/api/customers/{id:int}", async (
                 int id,
                 CustomerUpdateDto dto,
+                Guid branchId,
                 CustomerProvider customerProvider,
                  [FromServices] ICustomerService customerService) =>
             {
 
-                var response = await customerService.UpdateCustomerAsync(id, dto, customerProvider.TenantId);
+                var response = await customerService.UpdateCustomerAsync(id, dto, branchId, customerProvider.TenantId);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -54,11 +72,12 @@ namespace CustomerService.Endpoints
 
             app.MapDelete("/api/customers/{id:int}", async (
                 int id,
+                Guid branchId,
                 CustomerProvider customerProvider,
                 [FromServices] ICustomerService customerService) =>
             {
 
-                var response = await customerService.RemoveCustomerAsync(id, customerProvider.TenantId);
+                var response = await customerService.RemoveCustomerAsync(id, branchId, customerProvider.TenantId);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);

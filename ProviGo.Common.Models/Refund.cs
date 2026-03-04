@@ -9,6 +9,8 @@ namespace ProviGo.Common.Models
     {
         public int RefundId { get; set; }
         public Guid TenantId { get; set; }
+        public Guid BranchId { get; set; }
+
         public int PaymentId { get; set; }
         public int OrderId { get; set; }
         public string Mode { get; set; } = "OFFLINE";

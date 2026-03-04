@@ -7,25 +7,23 @@ namespace ProviGo.Common.Models
     [Table("Products")]
     public class Product
     {
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int ProductId { get; set; }
-
-        [Required]
         public Guid TenantId { get; set; }
-
-        [Required]
         public Guid BranchId { get; set; }
 
-
-        [Required, MaxLength(150)]
         public string ProductName { get; set; } = string.Empty;
 
         [Column(TypeName = "decimal(10,2)")]
         public decimal TotalFee { get; set; }
 
-        public bool IsActive { get; set; }
+        // ✅ ADD THESE
+        [MaxLength(20)]
+        public string? HSNCode { get; set; }
 
+        public int? TaxId { get; set; }
+        public int? DiscountId { get; set; }
+        public bool IsTaxInclusive { get; set; }  
+        public bool IsActive { get; set; }
         public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
 
 
@@ -34,5 +32,11 @@ namespace ProviGo.Common.Models
 
         [ForeignKey(nameof(BranchId))]
         public Branch Branch { get; set; }
+
+        [ForeignKey(nameof(TaxId))]
+        public Tax? Tax { get; set; }
+
+        [ForeignKey(nameof(DiscountId))]
+        public Discount? Discount { get; set; }
     }
 }

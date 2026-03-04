@@ -1,0 +1,30 @@
+﻿namespace OrderService.DTOs
+{
+    public class OrderResponseDto
+    {
+        public int OrderId { get; set; }
+        public Guid TenantId { get; set; }
+        public Guid BranchId { get; set; }
+        public int CustomerId { get; set; }
+
+        public DateTime OrderDate { get; set; }
+        public string Status { get; set; } = "";
+
+        public decimal SubTotal { get; set; }
+        public decimal DiscountTotal { get; set; }
+        public decimal TaxTotal { get; set; }
+        public decimal GrandTotal { get; set; }
+        public decimal PaidAmount { get; set; }
+        public decimal BalanceAmount { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+
+        // 🔹 Add These
+        public List<OrderItemResponseDto> Items { get; set; } = new();
+        public List<OrderTaxResponseDto> Taxes { get; set; } = new();
+        public List<OrderDiscountResponseDto> Discounts { get; set; } = new();
+        public List<OrderChargeResponseDto> Charges { get; set; } = new();
+    }
+
+
+}

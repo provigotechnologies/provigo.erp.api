@@ -21,7 +21,7 @@ namespace TenantService.Services.Implementation
         private readonly TenantDbContext _db = db;
         private readonly IGenericRepository<TenantDetails> _repo = repo;
 
-        public async Task<ApiResponse<TenantDto>> CreateTenantAsync(
+        public async Task<ApiResponse<TenantResponseDto>> CreateTenantAsync(
          TenantCreateDto dto)
         {
             try
@@ -33,7 +33,7 @@ namespace TenantService.Services.Implementation
 
                 if (emailExists)
                 {
-                    return ApiResponseFactory.Failure<TenantDto>(
+                    return ApiResponseFactory.Failure<TenantResponseDto>(
                         "This email is already registered."
                     );
                 }
@@ -52,10 +52,10 @@ namespace TenantService.Services.Implementation
                 _db.TenantDetails.Add(tenantDetails);
                 int affectedRows = await _db.SaveChangesAsync();
                 if (affectedRows == 0)
-                    return ApiResponseFactory.Failure<TenantDto>("Insert failed");
+                    return ApiResponseFactory.Failure<TenantResponseDto>("Insert failed");
 
                 // Return DTO with generated ID
-                var responseDto = new TenantDto
+                var responseDto = new TenantResponseDto
                 {
                     TenantId = tenantDetails.TenantId,
                     Name = tenantDetails.Name,
@@ -73,7 +73,7 @@ namespace TenantService.Services.Implementation
             catch (DbUpdateException ex)
             {
 
-                return ApiResponseFactory.Failure<TenantDto>("Database error occurred");
+                return ApiResponseFactory.Failure<TenantResponseDto>("Database error occurred");
 
             }
 

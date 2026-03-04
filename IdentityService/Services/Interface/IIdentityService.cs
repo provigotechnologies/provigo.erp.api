@@ -9,6 +9,7 @@ namespace IdentityService.Services.Interface
     {
         Task<ApiResponse<UserResponse>> RegisterAsync(
             UserCreateRequest dto,
+             List<Guid> branchIds,
             Guid tenantId);
 
         Task<ApiResponse<object>> LoginAsync(LoginDto dto);
@@ -16,15 +17,18 @@ namespace IdentityService.Services.Interface
         Task<ApiResponse<List<User>>> GetUsersAsync(
             PaginationRequest request,
             bool includeInactive,
+            Guid branchId,
             Guid tenantId);
 
         Task<ApiResponse<string>> UpdateUserAsync(
             Guid id,
             UserUpdateRequest dto,
+            Guid branchId,
             Guid tenantId);
 
         Task<ApiResponse<string>> DeleteUserAsync(
             Guid id,
+            Guid branchId,
             Guid tenantId);
 
         Task<ApiResponse<List<object>>> GetRolesAsync();

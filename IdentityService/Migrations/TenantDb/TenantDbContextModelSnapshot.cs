@@ -22,6 +22,194 @@ namespace IdentityService.Migrations.TenantDb
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
+            modelBuilder.Entity("InvoiceService.Domain.Entities.Invoice", b =>
+                {
+                    b.Property<int>("InvoiceId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("InvoiceId"));
+
+                    b.Property<decimal>("BalanceAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("BranchAddress")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<string>("BranchGSTIN")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("BranchName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("CompanyAddress")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<string>("CompanyGSTIN")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("CompanyPhone")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<string>("CustomerAddress")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<string>("CustomerGSTIN")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<string>("CustomerName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("CustomerPhone")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<decimal>("DiscountTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("DueDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<decimal>("GrandTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("InvoiceDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("InvoiceNumber")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("IsGST")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("PaidAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("RoundOffAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<decimal>("SubTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TaxTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("InvoiceId");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("Invoices");
+                });
+
+            modelBuilder.Entity("InvoiceService.Domain.Entities.InvoiceItem", b =>
+                {
+                    b.Property<int>("InvoiceItemId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("InvoiceItemId"));
+
+                    b.Property<decimal>("CGST")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("GSTAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("GSTPercent")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("IGST")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("InvoiceId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ItemName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<decimal>("LineTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("SGST")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("InvoiceItemId");
+
+                    b.HasIndex("InvoiceId");
+
+                    b.ToTable("InvoiceItems");
+                });
+
             modelBuilder.Entity("ProviGo.Common.Models.AttendanceRecord", b =>
                 {
                     b.Property<int>("AttendanceId")
@@ -69,16 +257,46 @@ namespace IdentityService.Migrations.TenantDb
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<string>("BranchCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)");
+
                     b.Property<string>("BranchName")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("varchar(150)");
 
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("CountryCode")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("varchar(5)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<string>("GSTIN")
+                        .IsRequired()
+                        .HasMaxLength(15)
+                        .HasColumnType("varchar(15)");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("StateCode")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("varchar(5)");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("char(36)");
@@ -118,13 +336,75 @@ namespace IdentityService.Migrations.TenantDb
                         .HasColumnType("char(36)");
 
                     b.Property<decimal>("Value")
-                        .HasColumnType("decimal(65,30)");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("ChargeId");
 
                     b.HasIndex("TenantId");
 
                     b.ToTable("Charges");
+                });
+
+            modelBuilder.Entity("ProviGo.Common.Models.Country", b =>
+                {
+                    b.Property<int>("CountryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("CountryId"));
+
+                    b.Property<string>("CountryCode")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("varchar(5)");
+
+                    b.Property<string>("CountryName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.HasKey("CountryId");
+
+                    b.ToTable("Countries");
+                });
+
+            modelBuilder.Entity("ProviGo.Common.Models.CourseOffering", b =>
+                {
+                    b.Property<int>("OfferingId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("OfferingId"));
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<TimeSpan>("EndTime")
+                        .HasColumnType("time(6)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("ShiftId")
+                        .HasColumnType("int");
+
+                    b.Property<TimeSpan>("StartTime")
+                        .HasColumnType("time(6)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<int>("TrainerCourseId")
+                        .HasColumnType("int");
+
+                    b.HasKey("OfferingId");
+
+                    b.HasIndex("ShiftId");
+
+                    b.HasIndex("TrainerCourseId");
+
+                    b.ToTable("CourseOfferings");
                 });
 
             modelBuilder.Entity("ProviGo.Common.Models.Customer", b =>
@@ -140,15 +420,23 @@ namespace IdentityService.Migrations.TenantDb
                         .HasMaxLength(500)
                         .HasColumnType("varchar(500)");
 
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("CustomerName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(250)
                         .HasColumnType("varchar(250)");
 
-                    b.Property<string>("FullName")
+                    b.Property<string>("GSTIN")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasMaxLength(15)
+                        .HasColumnType("varchar(15)");
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
@@ -163,10 +451,16 @@ namespace IdentityService.Migrations.TenantDb
                         .HasMaxLength(10)
                         .HasColumnType("varchar(10)");
 
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("char(36)");
 
                     b.HasKey("CustomerId");
+
+                    b.HasIndex("BranchId");
 
                     b.HasIndex("TenantId", "Email")
                         .IsUnique();
@@ -199,7 +493,8 @@ namespace IdentityService.Migrations.TenantDb
                         .HasColumnType("varchar(20)");
 
                     b.Property<decimal>("Value")
-                        .HasColumnType("decimal(65,30)");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("DiscountId");
 
@@ -252,7 +547,8 @@ namespace IdentityService.Migrations.TenantDb
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("OrderId"));
 
                     b.Property<decimal>("BalanceAmount")
-                        .HasColumnType("decimal(65,30)");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid>("BranchId")
                         .HasColumnType("char(36)");
@@ -264,16 +560,19 @@ namespace IdentityService.Migrations.TenantDb
                         .HasColumnType("int");
 
                     b.Property<decimal>("DiscountTotal")
-                        .HasColumnType("decimal(65,30)");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("GrandTotal")
-                        .HasColumnType("decimal(65,30)");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("datetime(6)");
 
                     b.Property<decimal>("PaidAmount")
-                        .HasColumnType("decimal(65,30)");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -281,10 +580,12 @@ namespace IdentityService.Migrations.TenantDb
                         .HasColumnType("varchar(20)");
 
                     b.Property<decimal>("SubTotal")
-                        .HasColumnType("decimal(65,30)");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("TaxTotal")
-                        .HasColumnType("decimal(65,30)");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("char(36)");
@@ -309,7 +610,8 @@ namespace IdentityService.Migrations.TenantDb
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("OrderChargeId"));
 
                     b.Property<decimal>("ChargeAmount")
-                        .HasColumnType("decimal(65,30)");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("ChargeId")
                         .HasColumnType("int");
@@ -335,7 +637,8 @@ namespace IdentityService.Migrations.TenantDb
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("OrderDiscountId"));
 
                     b.Property<decimal>("DiscountAmount")
-                        .HasColumnType("decimal(65,30)");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("DiscountId")
                         .HasColumnType("int");
@@ -367,13 +670,16 @@ namespace IdentityService.Migrations.TenantDb
                         .HasColumnType("int");
 
                     b.Property<decimal>("Quantity")
-                        .HasColumnType("decimal(65,30)");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("TotalPrice")
-                        .HasColumnType("decimal(65,30)");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("UnitPrice")
-                        .HasColumnType("decimal(65,30)");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("OrderItemId");
 
@@ -396,7 +702,8 @@ namespace IdentityService.Migrations.TenantDb
                         .HasColumnType("int");
 
                     b.Property<decimal>("TaxAmount")
-                        .HasColumnType("decimal(65,30)");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("TaxId")
                         .HasColumnType("int");
@@ -432,7 +739,8 @@ namespace IdentityService.Migrations.TenantDb
                         .HasColumnType("int");
 
                     b.Property<decimal>("PaidAmount")
-                        .HasColumnType("decimal(65,30)");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -442,7 +750,8 @@ namespace IdentityService.Migrations.TenantDb
                         .HasColumnType("char(36)");
 
                     b.Property<decimal>("TotalAmount")
-                        .HasColumnType("decimal(65,30)");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("PaymentId");
 
@@ -464,7 +773,8 @@ namespace IdentityService.Migrations.TenantDb
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("TransactionId"));
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(65,30)");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
@@ -531,7 +841,8 @@ namespace IdentityService.Migrations.TenantDb
                         .HasColumnType("varchar(50)");
 
                     b.Property<decimal>("Price")
-                        .HasColumnType("decimal(65,30)");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("PlanId");
 
@@ -552,23 +863,40 @@ namespace IdentityService.Migrations.TenantDb
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<int?>("DiscountId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("HSNCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
                     b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("IsTaxInclusive")
                         .HasColumnType("tinyint(1)");
 
                     b.Property<string>("ProductName")
                         .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("varchar(150)");
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<int?>("TaxId")
+                        .HasColumnType("int");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("char(36)");
 
                     b.Property<decimal>("TotalFee")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(10,2)");
 
                     b.HasKey("ProductId");
 
                     b.HasIndex("BranchId");
+
+                    b.HasIndex("DiscountId");
+
+                    b.HasIndex("TaxId");
 
                     b.HasIndex("TenantId", "ProductName")
                         .IsUnique();
@@ -583,6 +911,9 @@ namespace IdentityService.Migrations.TenantDb
                         .HasColumnType("int");
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("RefundId"));
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("char(36)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
@@ -605,7 +936,8 @@ namespace IdentityService.Migrations.TenantDb
                         .HasColumnType("longtext");
 
                     b.Property<decimal>("RefundAmount")
-                        .HasColumnType("decimal(65,30)");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -631,35 +963,79 @@ namespace IdentityService.Migrations.TenantDb
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ShiftId"));
 
-                    b.Property<DateTime>("CreatedOn")
-                        .HasColumnType("datetime(6)");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)");
-
-                    b.Property<int>("ProductId")
-                        .HasColumnType("int");
 
                     b.Property<string>("ShiftName")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("char(36)");
-
-                    b.Property<Guid>("TrainerId")
+                    b.Property<Guid?>("UserId")
                         .HasColumnType("char(36)");
 
                     b.HasKey("ShiftId");
 
-                    b.HasIndex("ProductId");
-
-                    b.HasIndex("TenantId");
-
-                    b.HasIndex("TrainerId");
+                    b.HasIndex("UserId");
 
                     b.ToTable("Shifts");
+                });
+
+            modelBuilder.Entity("ProviGo.Common.Models.State", b =>
+                {
+                    b.Property<int>("StateId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("StateId"));
+
+                    b.Property<int>("CountryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("StateCode")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("varchar(5)");
+
+                    b.Property<string>("StateName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.HasKey("StateId");
+
+                    b.HasIndex("CountryId");
+
+                    b.ToTable("States");
+                });
+
+            modelBuilder.Entity("ProviGo.Common.Models.StudentCourseEnrollment", b =>
+                {
+                    b.Property<int>("EnrollmentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("EnrollmentId"));
+
+                    b.Property<int>("CustomerId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<DateTime>("JoinDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("OfferingId")
+                        .HasColumnType("int");
+
+                    b.HasKey("EnrollmentId");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("OfferingId");
+
+                    b.ToTable("StudentCourseEnrollments");
                 });
 
             modelBuilder.Entity("ProviGo.Common.Models.Subscription", b =>
@@ -711,7 +1087,8 @@ namespace IdentityService.Migrations.TenantDb
                         .HasColumnType("varchar(50)");
 
                     b.Property<decimal>("Rate")
-                        .HasColumnType("decimal(65,30)");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(5,2)");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("char(36)");
@@ -742,6 +1119,11 @@ namespace IdentityService.Migrations.TenantDb
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
+                    b.Property<string>("GSTIN")
+                        .IsRequired()
+                        .HasMaxLength(15)
+                        .HasColumnType("varchar(15)");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)");
 
@@ -768,33 +1150,45 @@ namespace IdentityService.Migrations.TenantDb
                     b.ToTable("TenantDetails");
                 });
 
-            modelBuilder.Entity("ProviGo.Common.Models.TrainerShiftMapping", b =>
+            modelBuilder.Entity("ProviGo.Common.Models.TrainerCourse", b =>
                 {
-                    b.Property<int>("MappingId")
+                    b.Property<int>("TrainerCourseId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("MappingId"));
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("TrainerCourseId"));
 
-                    b.Property<int>("ShiftId")
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("ProductId")
                         .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("char(36)");
 
                     b.Property<Guid>("TrainerId")
                         .HasColumnType("char(36)");
 
-                    b.HasKey("MappingId");
+                    b.HasKey("TrainerCourseId");
 
-                    b.HasIndex("ShiftId");
+                    b.HasIndex("ProductId");
 
                     b.HasIndex("TrainerId");
 
-                    b.ToTable("TrainerShiftMappings");
+                    b.ToTable("TrainerCourses");
                 });
 
             modelBuilder.Entity("ProviGo.Common.Models.User", b =>
                 {
                     b.Property<Guid>("UserId")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("BranchId")
                         .HasColumnType("char(36)");
 
                     b.Property<DateTime>("CreatedAt")
@@ -907,6 +1301,44 @@ namespace IdentityService.Migrations.TenantDb
                     b.ToTable("UsersLogs");
                 });
 
+            modelBuilder.Entity("InvoiceService.Domain.Entities.Invoice", b =>
+                {
+                    b.HasOne("ProviGo.Common.Models.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ProviGo.Common.Models.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ProviGo.Common.Models.TenantDetails", "TenantDetails")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Branch");
+
+                    b.Navigation("Order");
+
+                    b.Navigation("TenantDetails");
+                });
+
+            modelBuilder.Entity("InvoiceService.Domain.Entities.InvoiceItem", b =>
+                {
+                    b.HasOne("InvoiceService.Domain.Entities.Invoice", "Invoice")
+                        .WithMany("InvoiceItems")
+                        .HasForeignKey("InvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Invoice");
+                });
+
             modelBuilder.Entity("ProviGo.Common.Models.AttendanceRecord", b =>
                 {
                     b.HasOne("ProviGo.Common.Models.Customer", "Customer")
@@ -956,13 +1388,40 @@ namespace IdentityService.Migrations.TenantDb
                     b.Navigation("TenantDetails");
                 });
 
+            modelBuilder.Entity("ProviGo.Common.Models.CourseOffering", b =>
+                {
+                    b.HasOne("ProviGo.Common.Models.Shift", "Shift")
+                        .WithMany()
+                        .HasForeignKey("ShiftId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ProviGo.Common.Models.TrainerCourse", "TrainerCourse")
+                        .WithMany()
+                        .HasForeignKey("TrainerCourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Shift");
+
+                    b.Navigation("TrainerCourse");
+                });
+
             modelBuilder.Entity("ProviGo.Common.Models.Customer", b =>
                 {
+                    b.HasOne("ProviGo.Common.Models.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("ProviGo.Common.Models.TenantDetails", "TenantDetails")
                         .WithMany()
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Branch");
 
                     b.Navigation("TenantDetails");
                 });
@@ -1138,6 +1597,14 @@ namespace IdentityService.Migrations.TenantDb
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ProviGo.Common.Models.Discount", "Discount")
+                        .WithMany()
+                        .HasForeignKey("DiscountId");
+
+                    b.HasOne("ProviGo.Common.Models.Tax", "Tax")
+                        .WithMany()
+                        .HasForeignKey("TaxId");
+
                     b.HasOne("ProviGo.Common.Models.TenantDetails", "TenantDetails")
                         .WithMany()
                         .HasForeignKey("TenantId")
@@ -1145,6 +1612,10 @@ namespace IdentityService.Migrations.TenantDb
                         .IsRequired();
 
                     b.Navigation("Branch");
+
+                    b.Navigation("Discount");
+
+                    b.Navigation("Tax");
 
                     b.Navigation("TenantDetails");
                 });
@@ -1170,29 +1641,39 @@ namespace IdentityService.Migrations.TenantDb
 
             modelBuilder.Entity("ProviGo.Common.Models.Shift", b =>
                 {
-                    b.HasOne("ProviGo.Common.Models.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("ProviGo.Common.Models.TenantDetails", "TenantDetails")
-                        .WithMany()
-                        .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("ProviGo.Common.Models.User", "User")
+                    b.HasOne("ProviGo.Common.Models.User", null)
                         .WithMany("Shifts")
-                        .HasForeignKey("TrainerId")
+                        .HasForeignKey("UserId");
+                });
+
+            modelBuilder.Entity("ProviGo.Common.Models.State", b =>
+                {
+                    b.HasOne("ProviGo.Common.Models.Country", "Country")
+                        .WithMany()
+                        .HasForeignKey("CountryId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Product");
+                    b.Navigation("Country");
+                });
 
-                    b.Navigation("TenantDetails");
+            modelBuilder.Entity("ProviGo.Common.Models.StudentCourseEnrollment", b =>
+                {
+                    b.HasOne("ProviGo.Common.Models.Customer", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Navigation("User");
+                    b.HasOne("ProviGo.Common.Models.CourseOffering", "Offering")
+                        .WithMany()
+                        .HasForeignKey("OfferingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("Offering");
                 });
 
             modelBuilder.Entity("ProviGo.Common.Models.Subscription", b =>
@@ -1225,23 +1706,23 @@ namespace IdentityService.Migrations.TenantDb
                     b.Navigation("TenantDetails");
                 });
 
-            modelBuilder.Entity("ProviGo.Common.Models.TrainerShiftMapping", b =>
+            modelBuilder.Entity("ProviGo.Common.Models.TrainerCourse", b =>
                 {
-                    b.HasOne("ProviGo.Common.Models.Shift", "Shift")
+                    b.HasOne("ProviGo.Common.Models.Product", "Product")
                         .WithMany()
-                        .HasForeignKey("ShiftId")
+                        .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ProviGo.Common.Models.User", "User")
+                    b.HasOne("ProviGo.Common.Models.User", "Trainer")
                         .WithMany()
                         .HasForeignKey("TrainerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Shift");
+                    b.Navigation("Product");
 
-                    b.Navigation("User");
+                    b.Navigation("Trainer");
                 });
 
             modelBuilder.Entity("ProviGo.Common.Models.User", b =>
@@ -1272,6 +1753,11 @@ namespace IdentityService.Migrations.TenantDb
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("InvoiceService.Domain.Entities.Invoice", b =>
+                {
+                    b.Navigation("InvoiceItems");
                 });
 
             modelBuilder.Entity("ProviGo.Common.Models.Branch", b =>

@@ -20,19 +20,17 @@ namespace ShiftService.Endpoints
             app.MapGet("/api/shifts", async (
                 [AsParameters] PaginationRequest request,
                 bool includeInactive,
-                ShiftProvider shiftProvider,
                 IShiftService shiftService) =>
             {
-                var response = await shiftService.GetShiftsAsync(request, includeInactive, shiftProvider.TenantId);
+                var response = await shiftService.GetShiftsAsync(request, includeInactive);
                 return Results.Ok(response);
             });
 
             app.MapPost("/api/shifts", async (
                 ShiftCreateDto dto,
-                ShiftProvider shiftProvider,
                 IShiftService shiftService) =>
             {
-                var response = await shiftService.CreateShiftAsync(dto, shiftProvider.TenantId);
+                var response = await shiftService.CreateShiftAsync(dto);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -41,10 +39,9 @@ namespace ShiftService.Endpoints
             app.MapPut("/api/shifts/{id:int}", async (
                 int id,
                 ShiftUpdateDto dto,
-                ShiftProvider shiftProvider,
                 IShiftService shiftService) =>
             {
-                var response = await shiftService.UpdateShiftAsync(id, dto, shiftProvider.TenantId);
+                var response = await shiftService.UpdateShiftAsync(id, dto);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -52,10 +49,25 @@ namespace ShiftService.Endpoints
 
             app.MapDelete("/api/shifts/{id:int}", async (
                 int id,
-                ShiftProvider shiftProvider,
                 IShiftService tenantService) =>
             {
-                var response = await tenantService.RemoveShiftAsync(id, shiftProvider.TenantId);
+                var response = await tenantService.RemoveShiftAsync(id);
+                return response.Success
+                    ? Results.Ok(response)
+                    : Results.BadRequest(response);
+            });
+
+            app.MapPost("/api/course-offerings", async (
+    CourseOfferingCreateDto dto,
+    Guid branchId,
+    ShiftProvider shiftProvider,
+    IShiftService shiftService) =>
+            {
+                var response = await shiftService.CreateCourseOfferingAsync(
+                    dto,
+                    branchId,
+                    shiftProvider.TenantId);
+
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);

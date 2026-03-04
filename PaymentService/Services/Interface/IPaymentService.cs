@@ -9,28 +9,28 @@ namespace PaymentService.Services.Interface
     public interface IPaymentService
     {
         Task<ApiResponse<List<Payment>>> 
-            GetPaymentsAsync(PaginationRequest request, bool includeInactive, Guid tenantId);
+            GetPaymentsAsync(PaginationRequest request, bool includeInactive, Guid branchId, Guid tenantId);
 
         Task<ApiResponse<List<OrderPaymentHistoryDto>>>
-            GetOrderPaymentHistoryAsync(int orderId, Guid tenantId);
+            GetOrderPaymentHistoryAsync(int orderId, Guid branchId, Guid tenantId);
 
         Task<PaymentTransactionResponseCreateDto>
-            CreateOnlinePaymentAsync(PaymentTransactionRequestCreateDto request, Guid tenantId);
+            CreateOnlinePaymentAsync(PaymentTransactionCreateDto request, Guid branchId, Guid tenantId);
 
         Task<bool>
-            VerifyOnlinePaymentAsync(VerifyPaymentTransactionRequestDto dto, Guid tenantId);
+            VerifyOnlinePaymentAsync(VerifyPaymentTransactionRequestDto dto, Guid branchId, Guid tenantId);
 
-        Task<ApiResponse<PaymentDto>>
-            CreateOfflinePaymentAsync(PaymentCreateDto dto, Guid tenantId);
+        Task<ApiResponse<PaymentResponseDto>>
+            CreateOfflinePaymentAsync(PaymentCreateDto dto, Guid branchId, Guid tenantId);
 
-        Task<ApiResponse<RefundDto>>
-            CreateOnlineRefundAsync(RefundCreateDto dto, Guid tenantId);
+        Task<ApiResponse<RefundResponseDto>>
+            CreateOnlineRefundAsync(RefundCreateDto dto, Guid branchId, Guid tenantId);
 
         Task<bool>
-            VerifyOnlineRefundAsync(string gatewayRefundId, Guid tenantId);
+            VerifyOnlineRefundAsync(string gatewayRefundId, Guid branchId, Guid tenantId);
 
-        Task<ApiResponse<RefundDto>>
-            CreateOfflineRefundAsync(RefundCreateDto dto, Guid tenantId);
+        Task<ApiResponse<RefundResponseDto>>
+            CreateOfflineRefundAsync(RefundCreateDto dto, Guid branchId, Guid tenantId);
     }
 }
 

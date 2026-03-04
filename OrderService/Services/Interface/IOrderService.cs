@@ -7,20 +7,43 @@ namespace OrderService.Services.Interface
 {
     public interface IOrderService
     {
-        Task<ApiResponse<List<OrderDto>>> GetOrdersAsync(
-     PaginationRequest request,
-     bool includeInactive, Guid tenantId);
+        Task<ApiResponse<List<OrderResponseDto>>> GetOrdersAsync(
+             PaginationRequest request,
+             bool includeInactive, 
+             Guid branchId,
+             Guid tenantId);
 
-        Task<ApiResponse<List<OrderDto>>> GetOrderByIdAsync(int orderId, Guid tenantId);
+        Task<ApiResponse<List<OrderResponseDto>>> GetOrderByIdAsync(
+            int orderId,
+            Guid branchId, 
+            Guid tenantId);
 
-        Task<ApiResponse<string>> UpdateOrderAsync(int orderId, OrderUpdateDto dto, Guid tenantId);
+        Task<ApiResponse<string>> UpdateOrderAsync(
+            int orderId, 
+            OrderUpdateDto dto, 
+            Guid branchId, 
+            Guid tenantId);
 
-        Task<ApiResponse<OrderDto>> CreateOrderAsync(OrderCreateDto dto, Guid tenantId);
+        Task<ApiResponse<OrderResponseDto>> CreateOrderAsync(
+            OrderCreateDto dto,
+            Guid branchId,
+            Guid tenantId);
 
-        Task<ApiResponse<string>> RemoveOrderAsync(int orderId, Guid tenantId);
+        Task<ApiResponse<string>> RemoveOrderAsync(
+            int orderId,
+            Guid branchId, 
+            Guid tenantId);
 
-        Task<ApiResponse<string>> UpdatePaymentAsync(int orderId, decimal paidAmount, Guid tenantId);
+        Task<ApiResponse<string>> UpdatePaymentAsync(
+            int orderId, 
+            decimal paidAmount, 
+            Guid branchId, 
+            Guid tenantId);
 
-        Task<ApiResponse<string>> UpdateRefundAsync(int orderId, decimal refundAmount, Guid tenantId);
+        Task<ApiResponse<string>> UpdateRefundAsync(
+            int orderId, 
+            decimal refundAmount,
+            Guid branchId, 
+            Guid tenantId);
     }
 }

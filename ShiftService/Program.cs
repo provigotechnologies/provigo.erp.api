@@ -17,6 +17,7 @@ var builder = WebApplication.CreateBuilder(args);
 // 🔹 Application Services
 
 builder.Services.AddScoped<IShiftService, ShiftService.Services.Implementation.ShiftService>();
+builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
 builder.Services.AddScoped<ShiftProvider>();
@@ -89,7 +90,7 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "Product Service API",
+        Title = "Shift Service API",
         Version = "v1"
     });
 
@@ -163,5 +164,7 @@ app.UseMiddleware<ShiftMiddleware>();  // After Auth, Before Authorization
 app.UseStaticFiles();
 
 ShiftEndpoints.Map(app);
+
+EnrollmentEndpoints.Map(app);
 
 app.Run();

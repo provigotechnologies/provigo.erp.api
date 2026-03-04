@@ -9,7 +9,7 @@ namespace TenantService.Services.Interface
     {
         Task<ApiResponse<List<TenantDetails>>> GetTenantsAsync(PaginationRequest request, bool includeInactive);
 
-        Task<ApiResponse<TenantDto>> CreateTenantAsync(TenantCreateDto dto);
+        Task<ApiResponse<TenantResponseDto>> CreateTenantAsync(TenantCreateDto dto);
 
         Task<ApiResponse<string>> UpdateTenantAsync(Guid tenantId, TenantUpdateDto dto);
 

@@ -18,19 +18,22 @@ namespace CustomerService.Services.Implementation
         private readonly TenantDbContext _db = db;
         private readonly IGenericRepository<Customer> _repo = repo;
 
-        public async Task<ApiResponse<CustomerDto>> CreateCustomerAsync(CustomerCreateDto dto, Guid tenantId)
+
+        //  Create Customers
+        public async Task<ApiResponse<CustomerResponseDto>> CreateCustomerAsync(CustomerCreateDto dto, Guid branchId, Guid tenantId)
         {
             try
             {
 
                 // 🔒 Duplicate email check
                 var emailExists = await _db.Customers
-                    .AnyAsync(i => i.TenantId == tenantId
-            && i.Email == dto.Email);
+                .AnyAsync(i => i.TenantId == tenantId
+               && i.BranchId == branchId
+               && i.Email == dto.Email);
 
                 if (emailExists)
                 {
-                    return ApiResponseFactory.Failure<CustomerDto>(
+                    return ApiResponseFactory.Failure<CustomerResponseDto>(
                         "This email is already registered."
                     );
                 }
@@ -38,8 +41,8 @@ namespace CustomerService.Services.Implementation
                 var customer = new Customer
                 {
                     TenantId = tenantId,
-                    BranchId = dto.BranchId,
-                    FullName = dto.FullName,
+                    BranchId = branchId,
+                    CustomerName = dto.FullName,
                     Phone = dto.Phone,
                     Email = dto.Email,
                     Address = dto.Address,
@@ -52,15 +55,13 @@ namespace CustomerService.Services.Implementation
                 _db.Customers.Add(customer);
                 int affectedRows = await _db.SaveChangesAsync();
                 if (affectedRows == 0)
-                    return ApiResponseFactory.Failure<CustomerDto>("Insert failed");
+                    return ApiResponseFactory.Failure<CustomerResponseDto>("Insert failed");
 
                 // Return DTO with generated ID
-                var responseDto = new CustomerDto
+                var responseDto = new CustomerResponseDto
                 {
                     CustomerId = customer.CustomerId,
-                    TenantId = customer.TenantId,
-                    BranchId = customer.BranchId,
-                    FullName = customer.FullName,
+                    FullName = customer.CustomerName,
                     Phone = customer.Phone,
                     Email = customer.Email,
                     Address = customer.Address,
@@ -76,12 +77,14 @@ namespace CustomerService.Services.Implementation
             catch (DbUpdateException ex)
             {
 
-                return ApiResponseFactory.Failure<CustomerDto>("Database error occurred");
+                return ApiResponseFactory.Failure<CustomerResponseDto>("Database error occurred");
 
             }
 
         }
 
+
+        //  Get All Customers
         public async Task<ApiResponse<List<Customer>>> GetCustomersAsync(
          PaginationRequest request,
          bool includeInactive,
@@ -116,24 +119,70 @@ namespace CustomerService.Services.Implementation
         }
 
 
-        public async Task<ApiResponse<string>> UpdateCustomerAsync(
+        //  Get Customer By Id
+        public async Task<ApiResponse<CustomerResponseDto>> GetCustomerByIdAsync(
         int customerId,
-        CustomerUpdateDto dto,
+        bool includeInactive,
+        Guid branchId,
         Guid tenantId)
         {
             try
             {
-                var exists = await _db.Customers.AnyAsync(p =>
-                    p.TenantId == tenantId &&
-                    p.CustomerId != customerId);
+                var customer = await _db.Customers
+                    .AsNoTracking()
+                    .Where(c =>
+                        c.CustomerId == customerId &&
+                        c.BranchId == branchId &&
+                        c.TenantId == tenantId)
+                    .Where(c => includeInactive || c.IsActive)
+                    .Select(c => new CustomerResponseDto
+                    {
+                        CustomerId = c.CustomerId,
+                        FullName = c.CustomerName,
+                        Phone = c.Phone,
+                        Email = c.Email,
+                        IsActive = c.IsActive
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (customer == null)
+                    return ApiResponseFactory.Failure<CustomerResponseDto>(
+                        "Customer not found");
+
+                return ApiResponseFactory.Success(
+                    customer,
+                    "Customer fetched successfully");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponseFactory.Failure<CustomerResponseDto>(
+                    ex.Message,
+                    ["Database error occurred"]);
+            }
+        }
+
+
+        //  Update Customer 
+        public async Task<ApiResponse<string>> UpdateCustomerAsync(
+        int customerId,
+        CustomerUpdateDto dto,
+        Guid branchId,
+        Guid tenantId)
+        {
+            try
+            {
+                var exists = await _db.Customers.AnyAsync(c =>
+                    c.TenantId == tenantId &&
+                    c.BranchId == branchId &&
+                    c.CustomerId != customerId && c.Email == dto.Email);
 
                 if (exists)
                     return ApiResponseFactory.Failure<string>("Customer already exists");
 
                 int affectedRows = await _db.Customers
-                .Where(i => i.CustomerId == customerId && i.TenantId == tenantId)
+                .Where(i => i.CustomerId == customerId && i.TenantId == tenantId && i.BranchId == branchId)
                 .ExecuteUpdateAsync(s => s
-                    .SetProperty(i => i.FullName, dto.FullName)
+                    .SetProperty(i => i.CustomerName, dto.FullName)
                     .SetProperty(i => i.Email, dto.Email)
                     .SetProperty(i => i.Phone, dto.Phone)
                     .SetProperty(i => i.Address, dto.Address)
@@ -152,13 +201,18 @@ namespace CustomerService.Services.Implementation
             }
         }
 
-        public async Task<ApiResponse<string>> RemoveCustomerAsync(int customerId, Guid tenantId)
+
+        //  Remove Customer 
+        public async Task<ApiResponse<string>> RemoveCustomerAsync(
+            int customerId,
+            Guid branchId, 
+            Guid tenantId)
         {
             try
             {
                 var customer = await _db.Customers
                     .FirstOrDefaultAsync(c => c.CustomerId == customerId
-                                           && c.TenantId == tenantId);
+                                && c.BranchId == branchId && c.TenantId == tenantId);
 
                 if (customer == null)
                 {

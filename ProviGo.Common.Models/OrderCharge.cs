@@ -14,7 +14,7 @@ namespace ProviGo.Common.Models
         public int ChargeId { get; set; }
 
         public decimal ChargeAmount { get; set; }
-        
+
         //Navigation
         [ForeignKey(nameof(OrderId))]
         public Order Order { get; set; } = default!;

@@ -23,5 +23,4 @@ namespace ProviGo.Common.Models
         [ForeignKey(nameof(TaxId))]
         public Tax Tax { get; set; }
     }
-
 }

@@ -1,4 +1,5 @@
 ﻿using IdentityService.Services;
+using InvoiceService.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using ProviGo.Common.Models;
 
@@ -72,12 +73,6 @@ public class TenantDbContext : DbContext
             .HasIndex(p => new { p.TenantId, p.ProductName })
             .IsUnique();
 
-        modelBuilder.Entity<Shift>()
-            .HasOne(s => s.User)
-            .WithMany(u => u.Shifts)
-            .HasForeignKey(s => s.TrainerId)
-            .OnDelete(DeleteBehavior.Restrict);
-
         modelBuilder.Entity<License>()
             .HasIndex(l => l.LicenseKey)
             .IsUnique();
@@ -86,18 +81,39 @@ public class TenantDbContext : DbContext
             .HasIndex(u => u.Email)
             .IsUnique();
 
-        modelBuilder.Entity<Refund>()
-            .HasOne(r => r.Payment)
-            .WithMany(p => p.Refunds)
-            .HasForeignKey(r => r.PaymentId)
-            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<State>()
+            .HasOne(s => s.Country)
+            .WithMany()
+            .HasForeignKey(s => s.CountryId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // ===== Global Decimal Precision Fix =====
+        foreach (var entity in modelBuilder.Model.GetEntityTypes())
+        {
+            var decimalProperties = entity.ClrType
+                .GetProperties()
+                .Where(p => p.PropertyType == typeof(decimal) ||
+                            p.PropertyType == typeof(decimal?));
+
+            foreach (var property in decimalProperties)
+            {
+                modelBuilder.Entity(entity.Name)
+                    .Property(property.Name)
+                    .HasPrecision(18, 2);
+            }
+        }
     }
 
     // ===== Core =====
     public DbSet<TenantDetails> TenantDetails { get; set; }
 
+    // ===== Masters =====
+    public DbSet<Country> Countries { get; set; }
+    public DbSet<State> States { get; set; }
+
     // ===== Users / Identity =====
     public DbSet<User> Users { get; set; }
+    public DbSet<UserBranch> UserBranches { get; set; }
     public DbSet<UserRole> UserRoles { get; set; }
     public DbSet<UsersLog> UsersLogs { get; set; }
 
@@ -107,11 +123,14 @@ public class TenantDbContext : DbContext
     public DbSet<Plan> Plans { get; set; }
     public DbSet<Charge> Charges { get; set; }
     public DbSet<Discount> Discounts { get; set; }
+    public DbSet<TrainerCourse> TrainerCourses { get; set; }
+    public DbSet<CourseOffering> CourseOfferings { get; set; }
+
     public DbSet<Tax> Taxes { get; set; }
 
     // ===== Customers & Attendance =====
     public DbSet<Customer> Customers { get; set; }
-    public DbSet<TrainerShiftMapping> CustomerBatchMappings { get; set; }
+    public DbSet<CourseOffering> CustomerBatchMappings { get; set; }
     public DbSet<AttendanceRecord> AttendanceRecords { get; set; }
 
     // ===== Orders =====
@@ -132,5 +151,12 @@ public class TenantDbContext : DbContext
 
     // ===== Shifts =====
     public DbSet<Shift> Shifts { get; set; }
+    public DbSet<StudentCourseEnrollment> StudentCourseEnrollments { get; set; }
+
+
+    // ===== Invoice =====
+    public DbSet<Invoice> Invoices { get; set; }
+    public DbSet<InvoiceItem> InvoiceItems { get; set; }
+
 
 }
