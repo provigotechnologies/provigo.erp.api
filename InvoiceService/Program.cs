@@ -1,29 +1,35 @@
-﻿using IdentityService.Data;
-using InvoiceService.Endpoints;
-using InvoiceService.Middleware;
+﻿using InvoiceService.Endpoints;
 using InvoiceService.Services;
 using InvoiceService.Services.Interface;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using ProviGo.Common.Data;
+using ProviGo.Common.Middleware;
 using ProviGo.Common.Pagination;
+using ProviGo.Common.Providers;
 using QuestPDF.Infrastructure;
+using System.Text;
 
 // Builder
 var builder = WebApplication.CreateBuilder(args);
 
 QuestPDF.Settings.License = LicenseType.Community;
 
-// 🔹 Memory Cache
-builder.Services.AddMemoryCache();
-
-// 🔹 Generic Repository
+// 🔹 Application Services
+builder.Services.AddScoped<IInvoiceService, InvoiceService.Services.InvoiceService>();
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
-// 🔹 Application Services
-builder.Services.AddScoped<InvoiceProvider>();
-builder.Services.AddScoped<IInvoiceService, InvoiceService.Services.InvoiceService>();
+builder.Services.AddScoped<TenantProvider>();
+
+builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddMemoryCache();
+builder.Services.AddCommonPagination();
 
 // 🔹 Master DB (Tenant Registry)
+
 builder.Services.AddDbContext<MasterDbContext>(options =>
     options.UseMySql(
         builder.Configuration.GetConnectionString("Master"),
@@ -31,10 +37,12 @@ builder.Services.AddDbContext<MasterDbContext>(options =>
             builder.Configuration.GetConnectionString("Master")
         )));
 
+
 // 🔹 Tenant DB (Per Tenant Connection)
+
 builder.Services.AddDbContext<TenantDbContext>((sp, options) =>
 {
-    var provider = sp.GetRequiredService<InvoiceProvider>();
+    var provider = sp.GetRequiredService<TenantProvider>();
 
     if (string.IsNullOrEmpty(provider.ConnectionString))
         throw new Exception("Tenant connection string not configured.");
@@ -44,7 +52,9 @@ builder.Services.AddDbContext<TenantDbContext>((sp, options) =>
         ServerVersion.AutoDetect(provider.ConnectionString));
 });
 
+
 // 🔹 CORS
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngularApp", policy =>
@@ -55,7 +65,29 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 🔹 Swagger (Tenant Header)
+
+// 🔐 JWT Authentication 
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
+            )
+        };
+    });
+
+builder.Services.AddAuthorization();
+
+
+// 🔹 Swagger (JWT + Tenant Header)
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -65,6 +97,23 @@ builder.Services.AddSwaggerGen(c =>
         Version = "v1"
     });
 
+    // 🔐 JWT
+    var jwtScheme = new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Reference = new OpenApiReference
+        {
+            Type = ReferenceType.SecurityScheme,
+            Id = JwtBearerDefaults.AuthenticationScheme
+        }
+    };
+
+    c.AddSecurityDefinition(jwtScheme.Reference.Id, jwtScheme);
+
     // 🏢 Tenant Header
     c.AddSecurityDefinition("TenantHeader", new OpenApiSecurityScheme
     {
@@ -72,6 +121,15 @@ builder.Services.AddSwaggerGen(c =>
         Type = SecuritySchemeType.ApiKey,
         In = ParameterLocation.Header,
         Description = "Enter Tenant Id"
+    });
+
+    // 🏢 Branch Header
+    c.AddSecurityDefinition("BranchHeader", new OpenApiSecurityScheme
+    {
+        Name = "X-Branch-Id",
+        Type = SecuritySchemeType.ApiKey,
+        In = ParameterLocation.Header,
+        Description = "Enter Branch Id"
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -86,14 +144,29 @@ builder.Services.AddSwaggerGen(c =>
                 }
             },
             Array.Empty<string>()
+        },
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "BranchHeader"
+                }
+            },
+            Array.Empty<string>()
         }
     });
 });
 
+
 // 🔹 Build App
+
 var app = builder.Build();
 
-// 🔹 Middleware Pipeline
+
+// 🔹 Middleware Pipeline 
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -104,12 +177,14 @@ app.UseHttpsRedirection();
 
 app.UseCors("AllowAngularApp");
 
-// 🔹 Custom Tenant Middleware
-app.UseMiddleware<InvoiceMiddleware>();
+app.UseAuthentication();
+
+app.UseMiddleware<TenantMiddleware>();
+
+app.UseAuthorization();
 
 app.UseStaticFiles();
 
-// 🔹 Map Endpoints
 InvoiceEndpoints.Map(app);
 
 app.Run();

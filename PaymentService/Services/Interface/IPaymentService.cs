@@ -8,7 +8,7 @@ namespace PaymentService.Services.Interface
 {
     public interface IPaymentService
     {
-        Task<ApiResponse<List<Payment>>> 
+        Task<ApiResponse<List<Payment>>>
             GetPaymentsAsync(PaginationRequest request, bool includeInactive, Guid branchId, Guid tenantId);
 
         Task<ApiResponse<List<OrderPaymentHistoryDto>>>
@@ -33,4 +33,3 @@ namespace PaymentService.Services.Interface
             CreateOfflineRefundAsync(RefundCreateDto dto, Guid branchId, Guid tenantId);
     }
 }
-

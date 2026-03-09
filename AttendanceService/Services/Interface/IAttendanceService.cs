@@ -1,4 +1,4 @@
-﻿using IdentityService.Data;
+﻿using ProviGo.Common.Data;
 using ProviGo.Common.Models;
 using ProviGo.Common.Pagination;
 using ProviGo.Common.Response;

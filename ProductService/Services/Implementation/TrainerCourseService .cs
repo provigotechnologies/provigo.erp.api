@@ -1,7 +1,7 @@
-﻿using IdentityService.Data;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ProductService.DTOs;
 using ProductService.Services.Interface;
+using ProviGo.Common.Data;
 using ProviGo.Common.Models;
 using ProviGo.Common.Pagination;
 using ProviGo.Common.Response;
@@ -23,8 +23,7 @@ namespace ProductService.Services.Implementation
             // 1️⃣ Validate Trainer
             var trainerExists = await _db.Users
                 .AnyAsync(u => u.UserId == dto.TrainerId
-                           && u.TenantId == tenantId
-                           && u.BranchId == branchId);
+                           && u.TenantId == tenantId);
 
             if (!trainerExists)
                 return ApiResponseFactory.Failure<string>("Invalid trainer");

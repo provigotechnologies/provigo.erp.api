@@ -1,7 +1,8 @@
 ﻿using PricingService.DTOs;
+using PricingService.Services;
 using PricingService.Services.Interface;
 using ProviGo.Common.Pagination;
-using PricingService.Services;
+using ProviGo.Common.Providers;
 
 namespace PricingService.Endpoints
 {
@@ -16,19 +17,17 @@ namespace PricingService.Endpoints
             app.MapGet("/api/discounts", async (
                 [AsParameters] PaginationRequest request,
                 bool includeInactive,
-                PricingProvider pricingProvider,
                 IPricingService discountService) =>
             {
-                var response = await discountService.GetDiscountsAsync(request, includeInactive, pricingProvider.TenantId);
+                var response = await discountService.GetDiscountsAsync(request, includeInactive);
                 return Results.Ok(response);
             });
 
             app.MapPost("/api/discounts", async (
                 DiscountCreateDto dto,
-                PricingProvider pricingProvider,
                 IPricingService discountService) =>
             {
-                var response = await discountService.CreateDiscountAsync(dto, pricingProvider.TenantId);
+                var response = await discountService.CreateDiscountAsync(dto);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -37,10 +36,9 @@ namespace PricingService.Endpoints
             app.MapPut("/api/discounts/{id:int}", async (
                 int id,
                 DiscountUpdateDto dto,
-                PricingProvider pricingProvider,
                 IPricingService discountService) =>
             {
-                var response = await discountService.UpdateDiscountAsync(id, dto, pricingProvider.TenantId);
+                var response = await discountService.UpdateDiscountAsync(id, dto);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -48,10 +46,9 @@ namespace PricingService.Endpoints
 
             app.MapDelete("/api/discounts/{id:int}", async (
                 int id,
-                PricingProvider pricingProvider,
                 IPricingService discountService) =>
             {
-                var response = await discountService.RemoveDiscountAsync(id, pricingProvider.TenantId);
+                var response = await discountService.RemoveDiscountAsync(id);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -65,19 +62,17 @@ namespace PricingService.Endpoints
             app.MapGet("/api/charges", async (
                 [AsParameters] PaginationRequest request,
                 bool includeInactive,
-                PricingProvider pricingProvider,
                 IPricingService chargeService) =>
             {
-                var response = await chargeService.GetChargesAsync(request, includeInactive, pricingProvider.TenantId);
+                var response = await chargeService.GetChargesAsync(request, includeInactive);
                 return Results.Ok(response);
             });
 
             app.MapPost("/api/charges", async (
                 ChargeCreateDto dto,
-                PricingProvider pricingProvider,
                 IPricingService chargeService) =>
             {
-                var response = await chargeService.CreateChargeAsync(dto, pricingProvider.TenantId);
+                var response = await chargeService.CreateChargeAsync(dto);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -86,10 +81,9 @@ namespace PricingService.Endpoints
             app.MapPut("/api/charges/{id:int}", async (
                 int id,
                 ChargeUpdateDto dto,
-                PricingProvider pricingProvider,
                 IPricingService chargeService) =>
             {
-                var response = await chargeService.UpdateChargeAsync(id, dto, pricingProvider.TenantId);
+                var response = await chargeService.UpdateChargeAsync(id, dto);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -97,10 +91,9 @@ namespace PricingService.Endpoints
 
             app.MapDelete("/api/charges/{id:int}", async (
                 int id,
-                PricingProvider pricingProvider,
                 IPricingService discountService) =>
             {
-                var response = await discountService.RemoveChargeAsync(id, pricingProvider.TenantId);
+                var response = await discountService.RemoveChargeAsync(id);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -114,19 +107,17 @@ namespace PricingService.Endpoints
             app.MapGet("/api/taxes", async (
                 [AsParameters] PaginationRequest request,
                 bool includeInactive,
-                PricingProvider pricingProvider,
                 IPricingService taxService) =>
             {
-                var response = await taxService.GetTaxesAsync(request, includeInactive, pricingProvider.TenantId);
+                var response = await taxService.GetTaxesAsync(request, includeInactive);
                 return Results.Ok(response);
             });
 
             app.MapPost("/api/taxes", async (
                 TaxCreateDto dto,
-                PricingProvider pricingProvider,
                 IPricingService chargeService) =>
             {
-                var response = await chargeService.CreateTaxAsync(dto, pricingProvider.TenantId);
+                var response = await chargeService.CreateTaxAsync(dto);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -135,10 +126,9 @@ namespace PricingService.Endpoints
             app.MapPut("/api/taxes/{id:int}", async (
                 int id,
                 TaxUpdateDto dto,
-                PricingProvider pricingProvider,
                 IPricingService chargeService) =>
             {
-                var response = await chargeService.UpdateTaxAsync(id, dto, pricingProvider.TenantId);
+                var response = await chargeService.UpdateTaxAsync(id, dto);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -146,10 +136,9 @@ namespace PricingService.Endpoints
 
             app.MapDelete("/api/taxes/{id:int}", async (
                 int id,
-                PricingProvider pricingProvider,
                 IPricingService taxService) =>
             {
-                var response = await taxService.RemoveTaxAsync(id, pricingProvider.TenantId);
+                var response = await taxService.RemoveTaxAsync(id);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);

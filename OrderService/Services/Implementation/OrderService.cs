@@ -1,9 +1,8 @@
-﻿using IdentityService.Data;
-using IdentityService.Services;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using OrderService.DTOs;
 using OrderService.Services.Interface;
 using OrderService.Services.Internal;
+using ProviGo.Common.Data;
 using ProviGo.Common.Models;
 using ProviGo.Common.Pagination;
 using ProviGo.Common.Response;
@@ -193,7 +192,7 @@ namespace OrderService.Services.Implementation
         public async Task<ApiResponse<List<OrderResponseDto>>> GetOrdersAsync(
         PaginationRequest request,
         bool includeInactive,
-        Guid branchId, 
+        Guid branchId,
         Guid tenantId)
         {
             // 1️⃣ Build query
@@ -325,7 +324,7 @@ namespace OrderService.Services.Implementation
             var order = await _db.Orders
                 .FirstOrDefaultAsync(o =>
                     o.OrderId == orderId &&
-                    o.TenantId == tenantId && 
+                    o.TenantId == tenantId &&
                     o.BranchId == branchId);
 
             if (order == null)

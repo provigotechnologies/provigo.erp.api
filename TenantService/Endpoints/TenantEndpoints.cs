@@ -1,4 +1,4 @@
-﻿using IdentityService.Data;
+﻿using ProviGo.Common.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProviGo.Common.Pagination;

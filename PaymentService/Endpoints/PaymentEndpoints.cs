@@ -4,6 +4,7 @@ using PaymentService.Services;
 using PaymentService.Services.Interface;
 using ProviGo.Common.Pagination;
 using PaymentService.Utils;
+using ProviGo.Common.Providers;
 
 namespace PaymentService.Endpoints
 {
@@ -16,7 +17,7 @@ namespace PaymentService.Endpoints
                 [AsParameters] PaginationRequest request,
                 bool includeInactive,
                 Guid branchId,
-                PaymentProvider paymentProvider,
+                TenantProvider paymentProvider,
                  [FromServices] IPaymentService paymentService) =>
             {
                 var response = await paymentService.GetPaymentsAsync(request, includeInactive, branchId, paymentProvider.TenantId);
@@ -27,27 +28,27 @@ namespace PaymentService.Endpoints
             app.MapPost("/api/paymentTransactions",
                 async ([FromBody] PaymentTransactionCreateDto req,
                 Guid branchId,
-                PaymentProvider paymentProvider,
+                TenantProvider paymentProvider,
                 IPaymentService service) => {
-                try
-                {
-                    if (req.Amount <= 0) return Results.BadRequest(new { message = "Invalid amount" });
+                    try
+                    {
+                        if (req.Amount <= 0) return Results.BadRequest(new { message = "Invalid amount" });
 
-                    var resp = await service.CreateOnlinePaymentAsync(req, branchId, paymentProvider.TenantId);
-                               return Results.Ok(resp);
-                }
-                catch (Exception ex)
-                {
-                    return Results.Problem(ex.Message);
-                }
+                        var resp = await service.CreateOnlinePaymentAsync(req, branchId, paymentProvider.TenantId);
+                        return Results.Ok(resp);
+                    }
+                    catch (Exception ex)
+                    {
+                        return Results.Problem(ex.Message);
+                    }
 
-            });
+                });
 
             app.MapPost("/api/payments",
             async (PaymentCreateDto dto,
                    IPaymentService service,
                    Guid branchId,
-                   PaymentProvider paymentProvider,
+                   TenantProvider paymentProvider,
                    HttpContext context) =>
             {
                 try
@@ -73,7 +74,7 @@ namespace PaymentService.Endpoints
             async (VerifyPaymentTransactionRequestDto dto,
            IPaymentService service,
            Guid branchId,
-           PaymentProvider paymentProvider) =>
+           TenantProvider paymentProvider) =>
             {
                 var ok = await service.VerifyOnlinePaymentAsync(dto, branchId, paymentProvider.TenantId);
 
@@ -86,7 +87,7 @@ namespace PaymentService.Endpoints
              async ([FromBody] RefundCreateDto dto,
                     IPaymentService service,
                     Guid branchId,
-                    PaymentProvider paymentProvider) =>
+                    TenantProvider paymentProvider) =>
              {
                  if (dto.RefundAmount <= 0)
                      return Results.BadRequest(new { message = "Invalid refund amount" });
@@ -106,7 +107,7 @@ namespace PaymentService.Endpoints
             async (string gatewayRefundId,
                    IPaymentService service,
                    Guid branchId,
-                   PaymentProvider paymentProvider) =>
+                   TenantProvider paymentProvider) =>
             {
                 if (paymentProvider.TenantId == Guid.Empty)
                     return Results.Unauthorized();
@@ -127,7 +128,7 @@ namespace PaymentService.Endpoints
             async ([FromBody] RefundCreateDto dto,
                    IPaymentService service,
                    Guid branchId,
-                   PaymentProvider paymentProvider) =>
+                   TenantProvider paymentProvider) =>
             {
                 if (dto.RefundAmount <= 0)
                     return Results.BadRequest(new { message = "Invalid refund amount" });

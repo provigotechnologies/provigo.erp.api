@@ -10,5 +10,7 @@
         public int RoleId { get; set; }
         public string UserCategory { get; set; } = default!;   // ✅ ADD THIS
         public bool IsActive { get; set; }
+        public List<Guid> BranchIds { get; set; } = new List<Guid>();
+
     }
 }

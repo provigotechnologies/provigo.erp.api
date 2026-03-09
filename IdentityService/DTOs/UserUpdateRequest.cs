@@ -7,6 +7,8 @@
         public string PhoneNumber { get; set; } = default!;
         public int RoleId { get; set; }
         public bool IsActive { get; set; }
+        public List<Guid> BranchIds { get; set; } = new List<Guid>();
+
     }
 
 }

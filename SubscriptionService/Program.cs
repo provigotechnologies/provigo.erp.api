@@ -1,4 +1,4 @@
-﻿using IdentityService.Data;
+﻿using ProviGo.Common.Data;
 using SubscriptionService.DTOs;
 using ProviGo.Common.Models;
 using Microsoft.EntityFrameworkCore;

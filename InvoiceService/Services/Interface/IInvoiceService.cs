@@ -1,9 +1,7 @@
-﻿using InvoiceService.Domain.Entities;
-using InvoiceService.DTOs;
+﻿using InvoiceService.DTOs;
 using ProviGo.Common.Models;
 using ProviGo.Common.Pagination;
 using ProviGo.Common.Response;
-using InvoiceService.Shared.Enums;
 
 namespace InvoiceService.Services.Interface
 {

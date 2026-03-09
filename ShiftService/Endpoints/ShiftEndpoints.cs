@@ -1,7 +1,7 @@
-﻿using IdentityService.Data;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProviGo.Common.Pagination;
+using ProviGo.Common.Providers;
 using ShiftService.DTOs;
 using ShiftService.Services;
 using ShiftService.Services.Interface;
@@ -58,10 +58,10 @@ namespace ShiftService.Endpoints
             });
 
             app.MapPost("/api/course-offerings", async (
-    CourseOfferingCreateDto dto,
-    Guid branchId,
-    ShiftProvider shiftProvider,
-    IShiftService shiftService) =>
+            CourseOfferingCreateDto dto,
+            Guid branchId,
+            TenantProvider shiftProvider,
+            IShiftService shiftService) =>
             {
                 var response = await shiftService.CreateCourseOfferingAsync(
                     dto,

@@ -7,32 +7,18 @@ namespace CustomerService.Services.Interface
 {
     public interface ICustomerService
     {
-        Task<ApiResponse<CustomerResponseDto>> GetCustomerByIdAsync(
-            int customerId,
-            bool includeInactive,
-            Guid branchId,
-            Guid tenantId);
-
         Task<ApiResponse<List<Customer>>> GetCustomersAsync(
             PaginationRequest request,
-            bool includeInactive,
-            Guid branchId,
-            Guid tenantId);
+            bool includeInactive);
 
         Task<ApiResponse<CustomerResponseDto>> CreateCustomerAsync(
-            CustomerCreateDto dto,
-            Guid branchId,
-            Guid tenantId);
+            CustomerCreateDto dto);
 
         Task<ApiResponse<string>> UpdateCustomerAsync(
             int customerId,
-            CustomerUpdateDto dto,
-            Guid branchId,
-            Guid tenantId);
+            CustomerUpdateDto dto);
 
         Task<ApiResponse<string>> RemoveCustomerAsync(
-            int customerId,
-            Guid branchId,
-            Guid tenantId);
+            int customerId);
     }
 }

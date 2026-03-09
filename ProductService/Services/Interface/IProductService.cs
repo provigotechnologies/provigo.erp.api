@@ -7,33 +7,18 @@ namespace ProductService.Services.Interface
 {
     public interface IProductService
     {
-
-        Task<ApiResponse<ProductResponseDto>> GetProductByIdAsync(
-            int productId,
-            bool includeInactive,
-            Guid branchId,
-            Guid tenantId);
-
         Task<ApiResponse<List<Product>>> GetProductsAsync(
-            PaginationRequest request, 
-            bool includeInactive,
-            Guid branchId,
-            Guid tenantId);
+            PaginationRequest request,
+            bool includeInactive);
 
         Task<ApiResponse<ProductResponseDto>> CreateProductAsync(
-            ProductCreateDto dto,
-            Guid branchId,
-            Guid tenantId);
+            ProductCreateDto dto);
 
         Task<ApiResponse<string>> UpdateProductAsync(
-            int productId, 
-            ProductUpdateDto dto, 
-            Guid branchId,
-            Guid tenantId);
+            int productId,
+            ProductUpdateDto dto);
 
         Task<ApiResponse<string>> RemoveProductAsync(
-            int productId, 
-            Guid branchId,
-            Guid tenantId);
+            int productId);
     }
 }

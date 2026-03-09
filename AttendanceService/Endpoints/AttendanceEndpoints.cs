@@ -1,11 +1,11 @@
 ﻿using AttendanceService.DTOs;
 using AttendanceService.Services;
 using AttendanceService.Services.Interface;
-using IdentityService.Data;
+using ProviGo.Common.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProviGo.Common.Pagination;
-using ProviGo.Common.Pagination;
+using ProviGo.Common.Providers;
 
 namespace AttendanceService.Endpoints
 {
@@ -20,19 +20,19 @@ namespace AttendanceService.Endpoints
             app.MapGet("/api/attendance", async (
                 [AsParameters] PaginationRequest request,
                 bool includeInactive,
-                AttendanceProvider attendanceProvider,
+                TenantProvider tenantProvider,
                  [FromServices] IAttendanceService AttendanceService) =>
             {
-                var response = await AttendanceService.GetAttendanceRecordsAsync(request, includeInactive, attendanceProvider.TenantId);
+                var response = await AttendanceService.GetAttendanceRecordsAsync(request, includeInactive, tenantProvider.TenantId);
                 return Results.Ok(response);
             });
 
             app.MapPost("/api/attendance", async (
                 AttendanceCreateDto dto,
-                 AttendanceProvider attendanceProvider,
+                 TenantProvider tenantProvider,
                  [FromServices] IAttendanceService AttendanceService) =>
             {
-                var response = await AttendanceService.CreateAttendanceRecordAsync(dto, attendanceProvider.TenantId);
+                var response = await AttendanceService.CreateAttendanceRecordAsync(dto, tenantProvider.TenantId);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -41,10 +41,10 @@ namespace AttendanceService.Endpoints
             app.MapPut("/api/products/{id:int}", async (
                 int id,
                 AttendanceUpdateDto dto,
-                AttendanceProvider attendanceProvider,
+                TenantProvider tenantProvider,
                  [FromServices] IAttendanceService AttendanceService) =>
             {
-                var response = await AttendanceService.UpdateAttendanceRecordAsync(id, dto, attendanceProvider.TenantId);
+                var response = await AttendanceService.UpdateAttendanceRecordAsync(id, dto, tenantProvider.TenantId);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);

@@ -1,8 +1,8 @@
-﻿using IdentityService.Data;
-using OrderService.DTOs;
+﻿using OrderService.DTOs;
 using OrderService.Services.Interface;
 using ProviGo.Common.Pagination;
 using OrderService.Services;
+using ProviGo.Common.Providers;
 
 namespace OrderService.Endpoints
 {
@@ -14,10 +14,10 @@ namespace OrderService.Endpoints
             app.MapGet("/api/orders/{id:int}", async (
                 int id,
                 Guid branchId,
-                OrderProvider orderProvider,
+                TenantProvider provider,
                 IOrderService orderService) =>
             {
-                var response = await orderService.GetOrderByIdAsync(id, branchId, orderProvider.TenantId);
+                var response = await orderService.GetOrderByIdAsync(id, branchId, provider.TenantId);
                 return response != null ? Results.Ok(response) : Results.NotFound();
             });
 
@@ -26,10 +26,10 @@ namespace OrderService.Endpoints
                 [AsParameters] PaginationRequest request,
                 bool includeInactive,
                 Guid branchId,
-                OrderProvider orderProvider,
+                TenantProvider provider,
                 IOrderService orderService) =>
             {
-                var response = await orderService.GetOrdersAsync(request, includeInactive, branchId, orderProvider.TenantId);
+                var response = await orderService.GetOrdersAsync(request, includeInactive, branchId, provider.TenantId);
                 return Results.Ok(response);
             });
 
@@ -37,10 +37,10 @@ namespace OrderService.Endpoints
             app.MapPost("/api/orders", async (
                 OrderCreateDto dto,
                 Guid branchId,
-                OrderProvider orderProvider,
+                TenantProvider provider,
                 IOrderService orderService) =>
             {
-                var response = await orderService.CreateOrderAsync(dto, branchId, orderProvider.TenantId);
+                var response = await orderService.CreateOrderAsync(dto, branchId, provider.TenantId);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -51,10 +51,10 @@ namespace OrderService.Endpoints
                 int id,
                 OrderUpdateDto dto,
                 Guid branchId,
-                OrderProvider orderProvider,
+                TenantProvider provider,
                 IOrderService orderService) =>
             {
-                var response = await orderService.UpdateOrderAsync(id, dto, branchId, orderProvider.TenantId);
+                var response = await orderService.UpdateOrderAsync(id, dto, branchId, provider.TenantId);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -64,10 +64,10 @@ namespace OrderService.Endpoints
             app.MapDelete("/api/orders/{id:int}", async (
                 int id,
                 Guid branchId,
-                OrderProvider orderProvider,
+                TenantProvider provider,
                 IOrderService orderService) =>
             {
-                var response = await orderService.RemoveOrderAsync(id, branchId, orderProvider.TenantId);
+                var response = await orderService.RemoveOrderAsync(id, branchId, provider.TenantId);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -78,10 +78,10 @@ namespace OrderService.Endpoints
             int orderId,
             OrderPaymentUpdateDto dto,
             Guid branchId,
-            OrderProvider orderProvider,
+            TenantProvider provider,
             IOrderService orderService) =>
             {
-                var response = await orderService.UpdatePaymentAsync(orderId, dto.PaidAmount, branchId, orderProvider.TenantId);
+                var response = await orderService.UpdatePaymentAsync(orderId, dto.PaidAmount, branchId, provider.TenantId);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -92,10 +92,10 @@ namespace OrderService.Endpoints
             int orderId,
             OrderRefundUpdateDto dto,
             Guid branchId,
-            OrderProvider orderProvider,
+            TenantProvider provider,
             IOrderService orderService) =>
             {
-                var response = await orderService.UpdateRefundAsync(orderId, dto.RefundAmount, branchId, orderProvider.TenantId);
+                var response = await orderService.UpdateRefundAsync(orderId, dto.RefundAmount, branchId, provider.TenantId);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);

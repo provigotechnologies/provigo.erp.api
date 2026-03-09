@@ -1,4 +1,5 @@
-﻿using ProviGo.Common.Response;
+﻿using ProviGo.Common.Providers;
+using ProviGo.Common.Response;
 using ShiftService.DTOs;
 using ShiftService.Services;
 using ShiftService.Services.Interface;
@@ -17,7 +18,7 @@ namespace ShiftService.Endpoints
                 int offeringId,
                 int customerId,
                 Guid branchId,
-                ShiftProvider shiftProvider,
+                TenantProvider shiftProvider,
                 IEnrollmentService enrollmentService) =>
             {
                 var response = await enrollmentService
@@ -33,7 +34,7 @@ namespace ShiftService.Endpoints
             app.MapGet("/api/enrollments/{offeringId:int}", async (
                 int offeringId,
                 Guid branchId,
-                ShiftProvider shiftProvider,
+                TenantProvider shiftProvider,
                 IEnrollmentService enrollmentService) =>
             {
                 var response = await enrollmentService
@@ -47,7 +48,7 @@ namespace ShiftService.Endpoints
             app.MapDelete("/api/enrollments/{enrollmentId:int}", async (
                 int enrollmentId,
                 Guid branchId,
-                ShiftProvider shiftProvider,
+                TenantProvider shiftProvider,
                 IEnrollmentService enrollmentService) =>
             {
                 var response = await enrollmentService

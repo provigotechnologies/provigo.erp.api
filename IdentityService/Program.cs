@@ -1,15 +1,17 @@
-﻿using IdentityService.Data;
-using IdentityService.DTOs;
-using IdentityService.Middleware;
+﻿using IdentityService.DTOs;
 using IdentityService.Services;
-using IdentityService.Services.Interface;
+using IdentityService.Services.Implementation;
 using IdentityService.Utils;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;  
+using Microsoft.OpenApi.Models;
+using ProviGo.Common.Data;
+using ProviGo.Common.Middleware;
 using ProviGo.Common.Models;
 using ProviGo.Common.Pagination;
+using ProviGo.Common.Providers;
+using ProviGo.Common.Services;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
@@ -65,12 +67,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 // Application Service
-builder.Services.AddScoped<IdentityProvider>();
-builder.Services.AddScoped<IIdentityProvider>(sp => sp.GetRequiredService<IdentityProvider>());
+builder.Services.AddScoped<TenantProvider>();
+builder.Services.AddScoped<ITenantProvider>(sp => sp.GetRequiredService<TenantProvider>());
 builder.Services.AddScoped<TokenService>();
 
 builder.Services.AddMemoryCache();
-
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<CurrentUserService>();
 
 // Swagger (JWT + Tenant Header)
 builder.Services.AddEndpointsApiExplorer();
@@ -82,7 +85,7 @@ builder.Services.AddSwaggerGen(c =>
         Version = "v1"
     });
 
-    // 🔐 JWT
+    // 🔐 JWT Authentication
     var jwtScheme = new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -90,16 +93,16 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
+        Description = "Enter JWT token",
         Reference = new OpenApiReference
         {
             Type = ReferenceType.SecurityScheme,
             Id = JwtBearerDefaults.AuthenticationScheme
         }
     };
-
     c.AddSecurityDefinition(jwtScheme.Reference.Id, jwtScheme);
 
-    // 🏢 Tenant Header
+    // 🏢 Tenant Header (optional, if still needed)
     c.AddSecurityDefinition("TenantHeader", new OpenApiSecurityScheme
     {
         Name = "X-Tenant-Id",
@@ -108,6 +111,7 @@ builder.Services.AddSwaggerGen(c =>
         Description = "Enter Tenant Id"
     });
 
+    // Global security requirement (JWT + Tenant)
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         { jwtScheme, Array.Empty<string>() },
@@ -124,8 +128,6 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
-
-
 // Controllers
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
@@ -146,9 +148,10 @@ app.UseHttpsRedirection();
 
 app.UseCors("AllowAngularApp");
 
+app.UseMiddleware<TenantMiddleware>();
+
 app.UseAuthentication();
 
-app.UseMiddleware<IdentityMiddleware>(); // AFTER Auth, BEFORE Authorization
 
 app.UseAuthorization();
 

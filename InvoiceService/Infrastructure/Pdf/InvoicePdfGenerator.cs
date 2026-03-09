@@ -1,5 +1,4 @@
-﻿using InvoiceService.Domain.Entities;
-using ProviGo.Common.Models;
+﻿using ProviGo.Common.Models;
 using QRCoder;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;

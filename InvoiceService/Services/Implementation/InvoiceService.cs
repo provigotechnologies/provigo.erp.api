@@ -1,13 +1,11 @@
-﻿using IdentityService.Data;
-using InvoiceService.Domain.Entities;
-using InvoiceService.DTOs;
+﻿using InvoiceService.DTOs;
 using InvoiceService.Infrastructure.Pdf;
 using InvoiceService.Services.Interface;
 using Microsoft.EntityFrameworkCore;
+using ProviGo.Common.Data;
 using ProviGo.Common.Models;
 using ProviGo.Common.Pagination;
 using ProviGo.Common.Response;
-using InvoiceService.Shared.Enums;
 
 namespace InvoiceService.Services
 {
@@ -252,7 +250,7 @@ namespace InvoiceService.Services
 
         public async Task<ApiResponse<string>> CancelInvoiceAsync(
     int invoiceId,
-    Guid branchId, 
+    Guid branchId,
     Guid tenantId)
         {
             var invoice = await _db.Invoices

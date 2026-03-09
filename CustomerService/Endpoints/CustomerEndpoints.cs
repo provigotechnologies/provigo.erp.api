@@ -1,12 +1,7 @@
-﻿using IdentityService.Data;
-using CustomerService.Services;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using CustomerService.DTOs;
+﻿using CustomerService.DTOs;
 using CustomerService.Services.Interface;
-using ProviGo.Common.Models;
+using Microsoft.AspNetCore.Mvc;
 using ProviGo.Common.Pagination;
-using System.Security.Claims;
 
 namespace CustomerService.Endpoints
 {
@@ -14,77 +9,55 @@ namespace CustomerService.Endpoints
     {
         public static void Map(WebApplication app)
         {
-            // ===========================
-            // 🔹 Customers
-            // ===========================
-
-            app.MapGet("/api/customers/{id:int}", async (
-            int id,
-            bool includeInactive,
-            Guid branchId,
-            CustomerProvider customerProvider,
-            [FromServices] ICustomerService customerService) =>
-            {
-                var response = await customerService.GetCustomerByIdAsync(id, includeInactive, branchId, customerProvider.TenantId);
-
-                return response.Success
-                    ? Results.Ok(response)
-                    : Results.NotFound(response);
-            });
-
+            // GET CUSTOMERS
             app.MapGet("/api/customers", async (
                 [AsParameters] PaginationRequest request,
                 bool includeInactive,
-                Guid branchId,
-                CustomerProvider customerProvider,
-                 [FromServices] ICustomerService customerService) =>
+                ICustomerService customerService) =>
             {
-                var response = await customerService.GetCustomersAsync(request, includeInactive, branchId, customerProvider.TenantId);
+                var response = await customerService.GetCustomersAsync(request, includeInactive);
                 return Results.Ok(response);
             });
 
 
+            // CREATE CUSTOMER
             app.MapPost("/api/customers", async (
                 CustomerCreateDto dto,
-                Guid branchId,
-                 [FromServices] ICustomerService customerService, 
-                 CustomerProvider customerProvider) =>
+                ICustomerService customerService) =>
             {
-                var response = await customerService.CreateCustomerAsync(dto, branchId, customerProvider.TenantId);
+                var response = await customerService.CreateCustomerAsync(dto);
+
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
             });
 
+
+            // UPDATE CUSTOMER
             app.MapPut("/api/customers/{id:int}", async (
                 int id,
                 CustomerUpdateDto dto,
-                Guid branchId,
-                CustomerProvider customerProvider,
-                 [FromServices] ICustomerService customerService) =>
+                ICustomerService customerService) =>
             {
+                var response = await customerService.UpdateCustomerAsync(id, dto);
 
-                var response = await customerService.UpdateCustomerAsync(id, dto, branchId, customerProvider.TenantId);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
             });
 
+
+            // DELETE CUSTOMER
             app.MapDelete("/api/customers/{id:int}", async (
                 int id,
-                Guid branchId,
-                CustomerProvider customerProvider,
-                [FromServices] ICustomerService customerService) =>
+                ICustomerService customerService) =>
             {
+                var response = await customerService.RemoveCustomerAsync(id);
 
-                var response = await customerService.RemoveCustomerAsync(id, branchId, customerProvider.TenantId);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
             });
-
-
-
         }
     }
 }

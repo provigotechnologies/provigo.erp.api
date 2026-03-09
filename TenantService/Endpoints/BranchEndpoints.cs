@@ -1,10 +1,11 @@
-﻿using IdentityService.Data;
+﻿using ProviGo.Common.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProviGo.Common.Pagination;
 using TenantService.DTOs;
 using TenantService.Services.Interface;
 using TenantService.Services;
+using ProviGo.Common.Providers;
 
 namespace TenantService.Endpoints
 {

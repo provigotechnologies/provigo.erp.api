@@ -20,11 +20,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\IdentityService\IdentityService.csproj" />
+    <Folder Include="Services\External\" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Services\External\" />
+    <ProjectReference Include="..\ProviGo.Common\ProviGo.Common.csproj" />
   </ItemGroup>
 
 </Project>

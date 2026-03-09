@@ -1,5 +1,5 @@
-﻿using IdentityService.Data;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using ProviGo.Common.Data;
 using ProviGo.Common.Models;
 using ProviGo.Common.Response;
 using ShiftService.DTOs;

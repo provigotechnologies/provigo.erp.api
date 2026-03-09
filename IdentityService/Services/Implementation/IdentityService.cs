@@ -1,62 +1,84 @@
 ﻿using BCrypt.Net;
-using IdentityService.Data;
 using IdentityService.DTOs;
-using IdentityService.Services.Interface;
-using IdentityService.Utils;
 using Microsoft.EntityFrameworkCore;
-using Provigo.Common.Exceptions;
+using ProviGo.Common.Data;
+using ProviGo.Common.Exceptions;
 using ProviGo.Common.Models;
 using ProviGo.Common.Pagination;
+using ProviGo.Common.Providers;
 using ProviGo.Common.Response;
+using ProviGo.Common.Services;
 
 namespace IdentityService.Services.Implementation
 {
     public class IdentityService(
         TenantDbContext db,
         IGenericRepository<User> repo,
-        TokenService tokenService) : IIdentityService
+        TenantProvider tenantProvider,
+        TokenService tokenService,
+        CurrentUserService currentUser) : IIdentityService
     {
         private readonly TenantDbContext _db = db;
         private readonly IGenericRepository<User> _repo = repo;
         private readonly TokenService _tokenService = tokenService;
+        private readonly TenantProvider _tenantProvider = tenantProvider;
+        private readonly CurrentUserService _currentUser = currentUser;
 
-
-        public async Task<ApiResponse<UserResponse>> RegisterAsync(
-            UserCreateRequest dto,
-            Guid branchId,
-            Guid tenantId)
+        // ---------------- REGISTER ----------------
+        public async Task<ApiResponse<UserResponse>> RegisterAsync(UserCreateRequest dto, List<Guid> branchIds)
         {
             try
             {
-                // 🔒 Duplicate email check (Tenant wise)
+                var tenantId = _tenantProvider.TenantId;
+
+                // 1️⃣ Email duplicate check
                 var emailExists = await _db.Users
-                    .AnyAsync(u => u.Email == dto.Email
-                                && u.BranchId == branchId
-                                && u.TenantId == tenantId);
+                    .AnyAsync(u => u.Email == dto.Email && u.TenantId == tenantId);
 
                 if (emailExists)
+                    return ApiResponseFactory.Failure<UserResponse>("Email already registered.");
+
+                // 2️⃣ Validate role
+                var role = await _db.UserRoles
+                    .FirstOrDefaultAsync(r => r.Id == dto.RoleId);
+
+                if (role == null)
+                    return ApiResponseFactory.Failure<UserResponse>("Invalid role.");
+
+                // 3️⃣ Validate branches based on role
+                List<Guid> assignedBranches = new();
+
+                switch (role.RoleName)
                 {
-                    return ApiResponseFactory.Failure<UserResponse>(
-                        "This email is already registered."
-                    );
+                    case "SuperAdmin":
+
+                        assignedBranches = new List<Guid>(); 
+                        break;
+
+                    case "Admin":
+
+                        if (branchIds == null || !branchIds.Any())
+                            return ApiResponseFactory.Failure<UserResponse>(
+                                "Admin must be assigned at least one branch.");
+
+                        assignedBranches = branchIds;
+                        break;
+
+                    default: 
+
+                        if (branchIds == null || branchIds.Count != 1)
+                            return ApiResponseFactory.Failure<UserResponse>(
+                                "User must be assigned exactly one branch.");
+
+                        assignedBranches = branchIds;
+                        break;
                 }
 
-                // 🔒 Role validation
-                var roleExists = await _db.UserRoles
-                    .AnyAsync(r => r.Id == dto.RoleId);
-
-                if (!roleExists)
-                {
-                    return ApiResponseFactory.Failure<UserResponse>(
-                        "Invalid role selected."
-                    );
-                }
-
+                // 4️⃣ Create user
                 var user = new User
                 {
                     UserId = Guid.NewGuid(),
                     TenantId = tenantId,
-                    BranchId = branchId,
                     FirstName = dto.FirstName,
                     LastName = dto.LastName,
                     Email = dto.Email,
@@ -69,16 +91,24 @@ namespace IdentityService.Services.Implementation
                     LastUpdatedAt = DateTime.UtcNow
                 };
 
-                _db.Users.Add(user);
+                await _db.Users.AddAsync(user);
 
-                int affectedRows = await _db.SaveChangesAsync();
+                // 5️⃣ Insert branches
+                if (assignedBranches.Any())
+                {
+                    var userBranches = assignedBranches.Select(b => new UserBranch
+                    {
+                        UserId = user.UserId,
+                        BranchId = b,
+                        IsActive = true
+                    });
 
-                if (affectedRows == 0)
-                    return ApiResponseFactory.Failure<UserResponse>(
-                        "Insert failed"
-                    );
+                    await _db.UserBranches.AddRangeAsync(userBranches);
+                }
 
-                // Response DTO
+                await _db.SaveChangesAsync();
+
+                // 6️⃣ Response
                 var response = new UserResponse
                 {
                     Id = user.UserId,
@@ -90,33 +120,29 @@ namespace IdentityService.Services.Implementation
                     CreatedAt = user.CreatedAt
                 };
 
-                return ApiResponseFactory.Success(
-                    response,
-                    "User registered successfully"
-                );
+                return ApiResponseFactory.Success(response, "User registered successfully");
             }
-            catch (DbUpdateException)
+            catch (Exception)
             {
-                return ApiResponseFactory.Failure<UserResponse>(
-                    "Database error occurred"
-                );
+                return ApiResponseFactory.Failure<UserResponse>("Registration failed.");
             }
         }
 
+
+        // ---------------- LOGIN ----------------
         public async Task<ApiResponse<object>> LoginAsync(LoginDto dto)
         {
-            var user = await _db.Users
-     .Include(u => u.UserRole)
-     .FirstOrDefaultAsync(u => u.Email == dto.Email);
+            var tenantId = _tenantProvider.TenantId;
 
-            if (user == null)
+            var user = await _db.Users
+             .Include(u => u.UserRole)
+             .FirstOrDefaultAsync(u => u.Email == dto.Email && u.TenantId == tenantId);
+
+            if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
                 return ApiResponseFactory.Failure<object>("Invalid credentials");
 
             if (!user.IsActive)
                 return ApiResponseFactory.Failure<object>("User inactive");
-
-            if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
-                return ApiResponseFactory.Failure<object>("Invalid credentials");
 
             var token = _tokenService.Create(user);
 
@@ -132,128 +158,181 @@ namespace IdentityService.Services.Implementation
             return ApiResponseFactory.Success<object>(new { token });
         }
 
-        public async Task<ApiResponse<List<User>>> GetUsersAsync(
-            PaginationRequest request,
-            bool includeInactive,
-            Guid branchId,
-            Guid tenantId)
+        // ---------------- GET USERS ----------------
+        public async Task<ApiResponse<List<User>>> GetUsersAsync(PaginationRequest request, bool includeInactive)
         {
             try
             {
-                var query = _db.Users
-                    .AsNoTracking()
-                    .Where(u => u.TenantId == tenantId && u.BranchId == branchId);
+                var tenantId = _tenantProvider.TenantId;
+                var currentUserId = _currentUser.UserId;
 
-                var pagedResult = await _repo.GetPagedAsync(
-                    query,
-                    request,
-                    i => includeInactive || i.IsActive
-                );
+                var currentUser = await _db.Users
+                    .Include(u => u.UserRole)
+                    .Include(u => u.UserBranches)
+                    .FirstOrDefaultAsync(u => u.UserId == currentUserId);
 
-                return ApiResponseFactory.PagedSuccess(
-                    pagedResult,
-                    "Users fetched successfully"
-                );
+                if (currentUser == null)
+                    return ApiResponseFactory.Failure<List<User>>("Current user not found");
+
+                IQueryable<User> query = _db.Users.AsNoTracking()
+                    .Where(u => u.TenantId == tenantId);
+
+                // Role-based filtering
+                if (currentUser.UserRole.RoleName.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+                {
+                    var adminBranchIds = currentUser.UserBranches.Select(ub => ub.BranchId).ToList();
+                    query = query.Where(u => u.UserBranches.Any(ub => adminBranchIds.Contains(ub.BranchId)));
+                }
+                else if (!currentUser.UserRole.RoleName.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase))
+                {
+                    var userBranchId = currentUser.UserBranches.FirstOrDefault()?.BranchId;
+                    query = query.Where(u => u.UserBranches.Any(ub => ub.BranchId == userBranchId));
+                }
+
+                if (!includeInactive)
+                    query = query.Where(u => u.IsActive);
+
+                var pagedResult = await _repo.GetPagedAsync(query, request);
+                return ApiResponseFactory.PagedSuccess(pagedResult, "Users fetched success+fully");
             }
-            catch (Exception)
+            catch
             {
-                return ApiResponseFactory.Failure<List<User>>(
-                    "Database error occurred"
-                );
-            }
+                return ApiResponseFactory.Failure<List<User>>("Database error occurred");
+            }   
         }
 
-
-        public async Task<ApiResponse<string>> UpdateUserAsync(
-            Guid id,
-            UserUpdateRequest dto,
-            Guid branchId,
-            Guid tenantId)
+        // ---------------- UPDATE USER ----------------
+        public async Task<ApiResponse<string>> UpdateUserAsync(Guid userId, UserUpdateRequest dto)
         {
             try
             {
-                int affectedRows = await _db.Users
-                    .Where(u => u.UserId == id && u.TenantId == tenantId && u.BranchId == branchId)
-                    .ExecuteUpdateAsync(s => s
-                        .SetProperty(u => u.FirstName, dto.FirstName)
-                        .SetProperty(u => u.LastName, dto.LastName)
-                        .SetProperty(u => u.PhoneNumber, dto.PhoneNumber)
-                        .SetProperty(u => u.RoleId, dto.RoleId)
-                        .SetProperty(u => u.IsActive, dto.IsActive)
-                        .SetProperty(u => u.LastUpdatedAt, DateTime.UtcNow)
-                    );
+                var tenantId = _tenantProvider.TenantId;
+
+                var query = _db.Users
+                    .Where(u => u.UserId == userId && u.TenantId == tenantId);
+
+                int affectedRows = await query.ExecuteUpdateAsync(u => u
+                    .SetProperty(u => u.FirstName, dto.FirstName)
+                    .SetProperty(u => u.LastName, dto.LastName)
+                    .SetProperty(u => u.PhoneNumber, dto.PhoneNumber)
+                    .SetProperty(u => u.RoleId, dto.RoleId)
+                    .SetProperty(u => u.IsActive, dto.IsActive)
+                    .SetProperty(u => u.LastUpdatedAt, DateTime.UtcNow)
+                );
 
                 if (affectedRows == 0)
                     throw new NotFoundException("User not found");
 
-                return ApiResponseFactory.Success(
-                    "User updated successfully"
-                );
+                var role = await _db.UserRoles
+                    .FirstOrDefaultAsync(r => r.Id == dto.RoleId);
+
+                if (role == null)
+                    return ApiResponseFactory.Failure<string>("Invalid role");
+
+                List<Guid> assignedBranches;
+
+                if (role.RoleName.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase))
+                {
+                    assignedBranches = await _db.Branches
+                        .Where(b => b.TenantId == tenantId)
+                        .Select(b => b.BranchId)
+                        .ToListAsync();
+                }
+                else if (role.RoleName.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (dto.BranchIds == null || !dto.BranchIds.Any())
+                        return ApiResponseFactory.Failure<string>("Admin must have at least one branch");
+
+                    assignedBranches = dto.BranchIds;
+                }
+                else
+                {
+                    if (dto.BranchIds == null || dto.BranchIds.Count != 1)
+                        return ApiResponseFactory.Failure<string>("User must be assigned branch");
+
+                    assignedBranches = dto.BranchIds;
+                }
+
+                var existingBranches = await _db.UserBranches
+                    .Where(ub => ub.UserId == userId)
+                    .ToListAsync();
+
+                var removeBranches = existingBranches
+                    .Where(ub => !assignedBranches.Contains(ub.BranchId))
+                    .ToList();
+
+                _db.UserBranches.RemoveRange(removeBranches);
+
+                var existingIds = existingBranches.Select(ub => ub.BranchId).ToList();
+
+                var newBranches = assignedBranches
+                    .Where(b => !existingIds.Contains(b))
+                    .Select(b => new UserBranch
+                    {
+                        UserId = userId,
+                        BranchId = b,
+                        IsActive = true
+                    });
+
+                await _db.UserBranches.AddRangeAsync(newBranches);
+
+                await _db.SaveChangesAsync();
+
+                return ApiResponseFactory.Success("User updated successfully");
             }
             catch (DbUpdateException)
-            {
-                return ApiResponseFactory.Failure<string>(
-                    "Database error occurred"
-                );
-            }
-        }
-
-        public async Task<ApiResponse<string>> DeleteUserAsync(Guid id, Guid branchId, Guid tenantId)
-        {
-            try
-            {
-                var user = await _db.Users
-                    .FirstOrDefaultAsync(u => u.UserId == id && u.TenantId == tenantId && u.BranchId == branchId);
-
-                if (user == null)
-                    return ApiResponseFactory.Failure<string>("User not found");
-
-                _db.Users.Remove(user);
-                int affectedRows = await _db.SaveChangesAsync();
-
-                if (affectedRows == 0)
-                    return ApiResponseFactory.Failure<string>("Delete failed");
-
-                return ApiResponseFactory.Success("User deleted successfully");
-            }
-            catch (Exception)
             {
                 return ApiResponseFactory.Failure<string>("Database error occurred");
             }
         }
 
+
+        // ---------------- DELETE USER ----------------
+        public async Task<ApiResponse<string>> DeleteUserAsync(Guid userId)
+        {
+            try
+            {
+                var tenantId = _tenantProvider.TenantId;
+                var user = await _db.Users.Include(u => u.UserBranches).FirstOrDefaultAsync(u => u.UserId == userId && u.TenantId == tenantId);
+
+                if (user == null)
+                    return ApiResponseFactory.Failure<string>("User not found");
+
+                _db.UserBranches.RemoveRange(user.UserBranches);
+                _db.Users.Remove(user);
+
+                await _db.SaveChangesAsync();
+                return ApiResponseFactory.Success("User deleted successfully");
+            }
+            catch
+            {
+                return ApiResponseFactory.Failure<string>("Database error occurred");
+            }
+        }
+
+        // ---------------- GET ROLES ----------------
         public async Task<ApiResponse<List<object>>> GetRolesAsync()
         {
-            var roles = await _db.UserRoles
-                .Select(r => new { r.Id, r.RoleName })
-                .ToListAsync();
-
+            var roles = await _db.UserRoles.Select(r => new { r.Id, r.RoleName }).ToListAsync();
             return ApiResponseFactory.Success<List<object>>(roles.Cast<object>().ToList());
         }
 
+        // ---------------- GET LOGS ---------------- 
         public async Task<ApiResponse<List<object>>> GetLogsAsync()
         {
-            var logs = await _db.UsersLogs
-                .OrderByDescending(l => l.EventTime)
-                .Select(l => new { l.EventMessage, l.EventTime })
-                .ToListAsync();
-
+            var logs = await _db.UsersLogs.OrderByDescending(l => l.EventTime)
+                .Select(l => new { l.EventMessage, l.EventTime }).ToListAsync();
             return ApiResponseFactory.Success<List<object>>(logs.Cast<object>().ToList());
         }
 
+        // ---------------- LOGOUT ----------------
         public async Task<ApiResponse<string>> LogoutAsync(LogoutRequest dto)
         {
             var user = await _db.Users.FindAsync(dto.UserId);
             if (user == null)
                 return ApiResponseFactory.Failure<string>("User not found");
 
-            _db.UsersLogs.Add(new UsersLog
-            {
-                UserId = user.UserId,
-                EventMessage = $"User {user.Email} logged out",
-                EventTime = DateTime.UtcNow
-            });
-
+            _db.UsersLogs.Add(new UsersLog { UserId = user.UserId, EventMessage = $"User {user.Email} logged out", EventTime = DateTime.UtcNow });
             await _db.SaveChangesAsync();
 
             return ApiResponseFactory.Success("Logout logged successfully");

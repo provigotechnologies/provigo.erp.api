@@ -3,6 +3,7 @@ using ProductService.DTOs;
 using ProductService.Services;
 using ProductService.Services.Interface;
 using ProviGo.Common.Pagination;
+using ProviGo.Common.Providers;
 
 namespace ProductService.Endpoints
 {
@@ -14,7 +15,7 @@ namespace ProductService.Endpoints
             app.MapPost("/api/trainercourse/map", async (
                 TrainerCourseCreateDto dto,
                 Guid branchId,
-                ProductProvider productProvider,
+                TenantProvider productProvider,
                 [FromServices] ITrainerCourseService trainerCourseService) =>
             {
                 var response = await trainerCourseService
@@ -29,7 +30,7 @@ namespace ProductService.Endpoints
             app.MapGet("/api/trainercourse/by-product/{productId}", async (
                 int productId,
                 Guid branchId,
-                ProductProvider productProvider,
+                TenantProvider productProvider,
                 [FromServices] ITrainerCourseService trainerCourseService) =>
             {
                 var response = await trainerCourseService

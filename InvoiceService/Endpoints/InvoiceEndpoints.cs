@@ -3,9 +3,9 @@ using InvoiceService.Services;
 using InvoiceService.Services.Interface;
 using Microsoft.AspNetCore.Mvc;
 using ProviGo.Common.Pagination;
+using ProviGo.Common.Providers;
 using ProviGo.Common.Response;
-using InvoiceService.Shared.Enums;
-
+using ProviGo.Common.Models;
 
 namespace InvoiceService.Endpoints
 {
@@ -16,7 +16,7 @@ namespace InvoiceService.Endpoints
             app.MapPost("/api/invoices/generate/{orderId}", async (
             int orderId,
             Guid BranchId,
-            InvoiceProvider provider,
+            TenantProvider provider,
             IInvoiceService service) =>
             {
                 var response = await service.GenerateFromOrderAsync(
@@ -33,11 +33,11 @@ namespace InvoiceService.Endpoints
               [AsParameters] PaginationRequest request,
               bool includeInactive,
               Guid branchId,
-              InvoiceProvider invoiceProvider,
+              TenantProvider provider,
               [FromServices] IInvoiceService invoiceService) =>
             {
                 var response = await invoiceService
-                    .GetInvoicesAsync(request, includeInactive, branchId, invoiceProvider.TenantId);
+                    .GetInvoicesAsync(request, includeInactive, branchId, provider.TenantId);
 
                 return Results.Ok(response);
             });
@@ -45,7 +45,7 @@ namespace InvoiceService.Endpoints
             app.MapPut("/api/invoices/{invoiceId}/cancel", async (
             int invoiceId,
             Guid branchId,
-            InvoiceProvider provider,
+            TenantProvider provider,
             IInvoiceService service) =>
             {
                 var response = await service.CancelInvoiceAsync(
@@ -61,7 +61,7 @@ namespace InvoiceService.Endpoints
             app.MapGet("/api/invoices/{invoiceId}/pdf", async (
             int invoiceId,
             Guid branchId,
-            InvoiceProvider provider,
+            TenantProvider provider,
             [FromQuery] string paperSize, // <-- added query param
             IInvoiceService service) =>
             {

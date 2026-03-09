@@ -1,31 +1,34 @@
-﻿using IdentityService.Data;
-using IdentityService.Services;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using PricingService.DTOs;
 using PricingService.Services.Interface;
-using Provigo.Common.Exceptions;
+using ProviGo.Common.Data;
+using ProviGo.Common.Exceptions;
 using ProviGo.Common.Models;
 using ProviGo.Common.Pagination;
+using ProviGo.Common.Providers;
 using ProviGo.Common.Response;
 
 namespace PricingService.Services.Implementation
 {
     public class PricingService(
     TenantDbContext db,
+    TenantProvider tenantProvider,
     IGenericRepository<Discount> discountRepo,
     IGenericRepository<Charge> chargeRepo,
     IGenericRepository<Tax> taxRepo) : IPricingService
     {
         private readonly TenantDbContext _db = db;
+        private readonly TenantProvider _tenantProvider = tenantProvider;
         private readonly IGenericRepository<Discount> _discountRepo = discountRepo;
         private readonly IGenericRepository<Charge> _chargeRepo = chargeRepo;
         private readonly IGenericRepository<Tax> _taxRepo = taxRepo;
 
         // Discount
-        public async Task<ApiResponse<DiscountResponseDto>> CreateDiscountAsync(DiscountCreateDto dto, Guid tenantId)
+        public async Task<ApiResponse<DiscountResponseDto>> CreateDiscountAsync(DiscountCreateDto dto)
         {
             try
             {
+                var tenantId = _tenantProvider.TenantId;
 
                 var exists = await _db.Discounts
                 .AnyAsync(d => d.TenantId == tenantId &&
@@ -72,10 +75,12 @@ namespace PricingService.Services.Implementation
 
         public async Task<ApiResponse<List<Discount>>> GetDiscountsAsync(
             PaginationRequest request,
-            bool includeInactive, Guid tenantId)
+            bool includeInactive)
         {
             try
             {
+                var tenantId = _tenantProvider.TenantId;
+
                 // Base query
                 var query = _db.Discounts
                     .Where(p => p.TenantId == tenantId)
@@ -102,10 +107,12 @@ namespace PricingService.Services.Implementation
             }
         }
 
-        public async Task<ApiResponse<string>> UpdateDiscountAsync(int discountId, DiscountUpdateDto dto, Guid tenantId)
+        public async Task<ApiResponse<string>> UpdateDiscountAsync(int discountId, DiscountUpdateDto dto)
         {
             try
             {
+                var tenantId = _tenantProvider.TenantId;
+
                 int affectedRows = await _db.Discounts
                    .Where(p => p.DiscountId == discountId
                             && p.TenantId == tenantId)
@@ -135,10 +142,12 @@ namespace PricingService.Services.Implementation
         }
 
 
-        public async Task<ApiResponse<string>> RemoveDiscountAsync(int discountId, Guid tenantId)
+        public async Task<ApiResponse<string>> RemoveDiscountAsync(int discountId)
         {
             try
             {
+                var tenantId = _tenantProvider.TenantId;
+
                 var discount = await _db.Discounts
                     .FirstOrDefaultAsync(p => p.DiscountId == discountId
                                            && p.TenantId == tenantId);
@@ -170,10 +179,11 @@ namespace PricingService.Services.Implementation
 
 
         // Charge
-        public async Task<ApiResponse<ChargeResponseDto>> CreateChargeAsync(ChargeCreateDto dto, Guid tenantId)
+        public async Task<ApiResponse<ChargeResponseDto>> CreateChargeAsync(ChargeCreateDto dto)
         {
             try
             {
+                var tenantId = _tenantProvider.TenantId;
 
                 var exists = await _db.Charges
             .AnyAsync(d => d.TenantId == tenantId && d.Name == dto.Name);
@@ -219,10 +229,12 @@ namespace PricingService.Services.Implementation
 
         public async Task<ApiResponse<List<Charge>>> GetChargesAsync(
             PaginationRequest request,
-            bool includeInactive, Guid tenantId)
+            bool includeInactive)
         {
             try
             {
+                var tenantId = _tenantProvider.TenantId;
+
                 // Base query
                 var query = _db.Charges
                     .Where(p => p.TenantId == tenantId)
@@ -249,10 +261,12 @@ namespace PricingService.Services.Implementation
             }
         }
 
-        public async Task<ApiResponse<string>> UpdateChargeAsync(int chargeId, ChargeUpdateDto dto, Guid tenantId)
+        public async Task<ApiResponse<string>> UpdateChargeAsync(int chargeId, ChargeUpdateDto dto)
         {
             try
             {
+                var tenantId = _tenantProvider.TenantId;
+
                 int affectedRows = await _db.Charges
                    .Where(p => p.ChargeId == chargeId
                             && p.TenantId == tenantId)
@@ -282,10 +296,12 @@ namespace PricingService.Services.Implementation
         }
 
 
-        public async Task<ApiResponse<string>> RemoveChargeAsync(int chargeId, Guid tenantId)
+        public async Task<ApiResponse<string>> RemoveChargeAsync(int chargeId)
         {
             try
             {
+                var tenantId = _tenantProvider.TenantId;
+
                 var charge = await _db.Charges
                     .FirstOrDefaultAsync(p => p.ChargeId == chargeId
                                            && p.TenantId == tenantId);
@@ -317,10 +333,11 @@ namespace PricingService.Services.Implementation
 
 
         // Tax
-        public async Task<ApiResponse<TaxResponseDto>> CreateTaxAsync(TaxCreateDto dto, Guid tenantId)
+        public async Task<ApiResponse<TaxResponseDto>> CreateTaxAsync(TaxCreateDto dto)
         {
             try
             {
+                var tenantId = _tenantProvider.TenantId;
 
                 var exists = await _db.Taxes
             .AnyAsync(d => d.TenantId == tenantId && d.Name == dto.Name);
@@ -364,10 +381,12 @@ namespace PricingService.Services.Implementation
 
         public async Task<ApiResponse<List<Tax>>> GetTaxesAsync(
             PaginationRequest request,
-            bool includeInactive, Guid tenantId)
+            bool includeInactive)
         {
             try
             {
+                var tenantId = _tenantProvider.TenantId;
+
                 // Base query
                 var query = _db.Taxes
                     .Where(p => p.TenantId == tenantId)
@@ -394,10 +413,12 @@ namespace PricingService.Services.Implementation
             }
         }
 
-        public async Task<ApiResponse<string>> UpdateTaxAsync(int taxId, TaxUpdateDto dto, Guid tenantId)
+        public async Task<ApiResponse<string>> UpdateTaxAsync(int taxId, TaxUpdateDto dto)
         {
             try
             {
+                var tenantId = _tenantProvider.TenantId;
+
                 int affectedRows = await _db.Taxes
                    .Where(p => p.TaxId == taxId
                             && p.TenantId == tenantId)
@@ -426,10 +447,12 @@ namespace PricingService.Services.Implementation
         }
 
 
-        public async Task<ApiResponse<string>> RemoveTaxAsync(int taxId, Guid tenantId)
+        public async Task<ApiResponse<string>> RemoveTaxAsync(int taxId)
         {
             try
             {
+                var tenantId = _tenantProvider.TenantId;
+
                 var tax = await _db.Taxes
                     .FirstOrDefaultAsync(p => p.TaxId == taxId
                                            && p.TenantId == tenantId);

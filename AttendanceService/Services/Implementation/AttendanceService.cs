@@ -1,8 +1,8 @@
 ﻿using AttendanceService.DTOs;
 using AttendanceService.Services.Interface;
-using IdentityService.Data;
+using ProviGo.Common.Data;
 using Microsoft.EntityFrameworkCore;
-using Provigo.Common.Exceptions;
+using ProviGo.Common.Exceptions;
 using ProviGo.Common.Models;
 using ProviGo.Common.Pagination;
 using ProviGo.Common.Response;

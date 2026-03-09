@@ -1,15 +1,16 @@
-﻿using IdentityService.Data;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using ProviGo.Common.Data;
+using ProviGo.Common.Middleware;
+using ProviGo.Common.Pagination;
+using ProviGo.Common.Providers;
+using System.Text;
 using TenantService.Endpoints;
-using TenantService.Middleware;
 using TenantService.Services;
 using TenantService.Services.Implementation;
 using TenantService.Services.Interface;
-using ProviGo.Common.Pagination;
-using System.Text;
 
 // Builder
 var builder = WebApplication.CreateBuilder(args);

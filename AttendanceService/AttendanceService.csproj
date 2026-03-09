@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\IdentityService\IdentityService.csproj" />
+    <ProjectReference Include="..\ProviGo.Common\ProviGo.Common.csproj" />
   </ItemGroup>
 
 </Project>

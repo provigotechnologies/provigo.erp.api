@@ -1,12 +1,8 @@
-﻿using Humanizer;
-using IdentityService.Data;
-using IdentityService.Services;
-using Microsoft.CodeAnalysis.Operations;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using OrderService.DTOs;
 using PaymentService.DTOs;
 using PaymentService.Services.Interface;
-using Provigo.Common.Exceptions;
+using ProviGo.Common.Data;
 using ProviGo.Common.Models;
 using ProviGo.Common.Pagination;
 using ProviGo.Common.Response;
@@ -122,8 +118,8 @@ namespace PaymentService.Services.Implementation
             _httpClient.DefaultRequestHeaders.Add("X-Tenant-Id", tenantId.ToString());
 
             // 🔹 Fetch order from OrderService
-             var orderResponse = await _httpClient.GetAsync(
-                $"{_config["Services:OrderService"]}/api/orders/{request.OrderId}?branchId={branchId}");
+            var orderResponse = await _httpClient.GetAsync(
+               $"{_config["Services:OrderService"]}/api/orders/{request.OrderId}?branchId={branchId}");
 
             if (!orderResponse.IsSuccessStatusCode)
             {
@@ -260,7 +256,7 @@ namespace PaymentService.Services.Implementation
         public async Task<ApiResponse<List<AppPayment>>> GetPaymentsAsync(
            PaginationRequest request,
            bool includeInactive,
-           Guid branchId, 
+           Guid branchId,
            Guid tenantId)
         {
             try
@@ -288,14 +284,14 @@ namespace PaymentService.Services.Implementation
 
                 return ApiResponseFactory.Failure<List<AppPayment>>(ex.Message, ["Database error occurred"]);
 
-            }   
+            }
         }
 
 
         // 🔹 GET FULL PAYMENT HISTORY FOR AN ORDER
         public async Task<ApiResponse<List<OrderPaymentHistoryDto>>> GetOrderPaymentHistoryAsync(
            int orderId,
-           Guid branchId, 
+           Guid branchId,
            Guid tenantId)
         {
             // 1️⃣ Fetch all payments (offline + online) for this order
@@ -337,7 +333,7 @@ namespace PaymentService.Services.Implementation
                             PaymentId = payment.PaymentId,
                             TransactionId = tx.TransactionId,
                             Amount = tx.Amount,
-                            Mode = tx.Mode, 
+                            Mode = tx.Mode,
                             Status = tx.Status,
                             PaidAt = tx.PaidAt ?? payment.CreatedAt
                         });
@@ -466,7 +462,7 @@ namespace PaymentService.Services.Implementation
                 .Include(p => p.Transactions)
                 .FirstOrDefaultAsync(p =>
                     p.PaymentId == dto.PaymentId &&
-                    p.TenantId == tenantId && 
+                    p.TenantId == tenantId &&
                     p.Mode == "ONLINE");
 
             if (payment == null)

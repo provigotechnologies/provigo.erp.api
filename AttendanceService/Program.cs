@@ -1,24 +1,23 @@
-﻿using IdentityService.Data;
-using IdentityService.Middleware;
-using IdentityService.Services;
+﻿using ProviGo.Common.Data;
+using ProviGo.Common.Middleware;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using AttendanceService.Endpoints;
-using AttendanceService.Middleware;
 using AttendanceService.Services;
 using AttendanceService.Services.Extensions;
 using AttendanceService.Services.Implementation;
 using AttendanceService.Services.Interface;
 using ProviGo.Common.Pagination;
+using ProviGo.Common.Providers;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddHttpContextAccessor();
 
 // ✅ Identity Provider
-builder.Services.AddScoped<AttendanceProvider>();
-builder.Services.AddScoped<IAttendanceProvider>(sp =>
-    sp.GetRequiredService<AttendanceProvider>());
+builder.Services.AddScoped<TenantProvider>();
+builder.Services.AddScoped<ITenantProvider>(sp =>
+    sp.GetRequiredService<TenantProvider>());
 
 // ✅ Master DB
 builder.Services.AddDbContext<MasterDbContext>(options =>
@@ -100,7 +99,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseMiddleware<AttendanceMiddleware>();
+app.UseMiddleware<TenantMiddleware>();
 
 app.UseStaticFiles();
 

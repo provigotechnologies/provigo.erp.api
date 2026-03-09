@@ -1,5 +1,4 @@
-﻿using IdentityService.Data;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProductService.DTOs;
 using ProductService.Services;
@@ -7,6 +6,7 @@ using ProductService.Services.Implementation;
 using ProductService.Services.Interface;
 using ProviGo.Common.Models;
 using ProviGo.Common.Pagination;
+using ProviGo.Common.Providers;
 using System.Security.Claims;
 
 namespace ProductService.Endpoints
@@ -19,41 +19,22 @@ namespace ProductService.Endpoints
             // 🔹 Products
             // ===========================
 
-            app.MapGet("/api/products/{id:int}", async (
-            int id,
-            bool includeInactive,
-            Guid branchId,
-            ProductProvider productProvider,
-            [FromServices] IProductService productService) =>
-            {
-                var response = await productService.GetProductByIdAsync(id, includeInactive, branchId, productProvider.TenantId);
-
-                return response.Success
-                    ? Results.Ok(response)
-                    : Results.NotFound(response);
-            });
-
-
             app.MapGet("/api/products", async (
               [AsParameters] PaginationRequest request,
               bool includeInactive,
-              Guid branchId,   
-              ProductProvider productProvider,
               [FromServices] IProductService productService) =>
             {
                 var response = await productService
-                    .GetProductsAsync(request, includeInactive, branchId, productProvider.TenantId);
+                    .GetProductsAsync(request, includeInactive);
 
                 return Results.Ok(response);
             });
 
             app.MapPost("/api/products", async (
                 ProductCreateDto dto,
-                Guid branchId,
-                [FromServices] IProductService productService,
-                ProductProvider productProvider) =>
+                [FromServices] IProductService productService) =>
             {
-                var response = await productService.CreateProductAsync(dto, branchId, productProvider.TenantId);
+                var response = await productService.CreateProductAsync(dto);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -62,11 +43,9 @@ namespace ProductService.Endpoints
             app.MapPut("/api/products/{id:int}", async (
                 int id,
                 ProductUpdateDto dto,
-                Guid branchId,
-                ProductProvider productProvider,
                 [FromServices] IProductService productService) =>
             {
-                var response = await productService.UpdateProductAsync(id, dto, branchId, productProvider.TenantId);
+                var response = await productService.UpdateProductAsync(id, dto);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -74,12 +53,10 @@ namespace ProductService.Endpoints
 
             app.MapDelete("/api/products/{id:int}", async (
                 int id,
-                Guid branchId,
-                ProductProvider productProvider,
                 [FromServices] IProductService productService) =>
             {
 
-                var response = await productService.RemoveProductAsync(id, branchId, productProvider.TenantId);
+                var response = await productService.RemoveProductAsync(id);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);

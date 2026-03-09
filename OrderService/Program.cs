@@ -1,28 +1,30 @@
-﻿using IdentityService.Data;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using OrderService.Endpoints;
-using OrderService.Middleware;
 using OrderService.Services;
 using OrderService.Services.Implementation;
 using OrderService.Services.Interface;
+using ProviGo.Common.Data;
+using ProviGo.Common.Middleware;
 using ProviGo.Common.Pagination;
+using ProviGo.Common.Providers;
 using System.Text;
 
 // Builder
 var builder = WebApplication.CreateBuilder(args);
 
 // 🔹 Application Services
-
 builder.Services.AddScoped<IOrderService, OrderService.Services.Implementation.OrderService>();
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
-builder.Services.AddScoped<OrderProvider>();
+builder.Services.AddScoped<TenantProvider>();
+
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddMemoryCache();
 builder.Services.AddCommonPagination();
-
 
 // 🔹 Master DB (Tenant Registry)
 
@@ -38,7 +40,7 @@ builder.Services.AddDbContext<MasterDbContext>(options =>
 
 builder.Services.AddDbContext<TenantDbContext>((sp, options) =>
 {
-    var provider = sp.GetRequiredService<OrderProvider>();
+    var provider = sp.GetRequiredService<TenantProvider>();
 
     if (string.IsNullOrEmpty(provider.ConnectionString))
         throw new Exception("Tenant connection string not configured.");
@@ -64,7 +66,7 @@ builder.Services.AddCors(options =>
 
 // 🔐 JWT Authentication 
 
-/*builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
@@ -79,7 +81,7 @@ builder.Services.AddCors(options =>
         };
     });
 
-builder.Services.AddAuthorization();*/
+builder.Services.AddAuthorization();
 
 
 // 🔹 Swagger (JWT + Tenant Header)
@@ -119,9 +121,17 @@ builder.Services.AddSwaggerGen(c =>
         Description = "Enter Tenant Id"
     });
 
+    // 🏢 Branch Header
+    c.AddSecurityDefinition("BranchHeader", new OpenApiSecurityScheme
+    {
+        Name = "X-Branch-Id",
+        Type = SecuritySchemeType.ApiKey,
+        In = ParameterLocation.Header,
+        Description = "Enter Branch Id"
+    });
+
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
-        { jwtScheme, Array.Empty<string>() },
         {
             new OpenApiSecurityScheme
             {
@@ -129,6 +139,17 @@ builder.Services.AddSwaggerGen(c =>
                 {
                     Type = ReferenceType.SecurityScheme,
                     Id = "TenantHeader"
+                }
+            },
+            Array.Empty<string>()
+        },
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "BranchHeader"
                 }
             },
             Array.Empty<string>()
@@ -154,11 +175,11 @@ app.UseHttpsRedirection();
 
 app.UseCors("AllowAngularApp");
 
-// app.UseAuthentication();
+app.UseAuthentication();
 
-app.UseMiddleware<OrderMiddleware>();  // After Auth, Before Authorization
+app.UseMiddleware<TenantMiddleware>();
 
-// app.UseAuthorization();
+app.UseAuthorization();
 
 app.UseStaticFiles();
 

@@ -1,4 +1,4 @@
-﻿using InvoiceService.Shared.Enums;
+﻿using ProviGo.Common.Models;
 using QuestPDF.Infrastructure;
 using QuestPDF.Helpers;
 
