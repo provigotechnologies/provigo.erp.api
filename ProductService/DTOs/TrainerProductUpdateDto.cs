@@ -1,6 +1,6 @@
 ﻿namespace ProductService.DTOs
 {
-    public class TrainerCourseUpdateDto
+    public class TrainerProductUpdateDto
     {
         public bool IsActive { get; set; }
 

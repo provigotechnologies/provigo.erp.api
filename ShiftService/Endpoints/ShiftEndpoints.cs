@@ -57,22 +57,6 @@ namespace ShiftService.Endpoints
                     : Results.BadRequest(response);
             });
 
-            app.MapPost("/api/course-offerings", async (
-            CourseOfferingCreateDto dto,
-            Guid branchId,
-            TenantProvider shiftProvider,
-            IShiftService shiftService) =>
-            {
-                var response = await shiftService.CreateCourseOfferingAsync(
-                    dto,
-                    branchId,
-                    shiftProvider.TenantId);
-
-                return response.Success
-                    ? Results.Ok(response)
-                    : Results.BadRequest(response);
-            });
-
         }
 
     }

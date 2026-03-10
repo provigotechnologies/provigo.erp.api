@@ -1,27 +1,45 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ProviGo.Common.Data;
 using ProviGo.Common.Models;
+using ProviGo.Common.Pagination;
+using ProviGo.Common.Providers;
 using ProviGo.Common.Response;
+using ProviGo.Common.Services;
 using ShiftService.DTOs;
 using ShiftService.Services.Interface;
 
 namespace ShiftService.Services.Implementation
 {
     public class EnrollmentService(
-        TenantDbContext db) : IEnrollmentService
+        TenantDbContext db,
+        TenantProvider tenantProvider,
+        BranchAccessService branchAccess,
+        IGenericRepository<CustomerProductEnrollment> repo) : IEnrollmentService
     {
         private readonly TenantDbContext _db = db;
+        private readonly TenantProvider _tenantProvider = tenantProvider;
+        private readonly BranchAccessService _branchAccess = branchAccess;
+        private readonly IGenericRepository<CustomerProductEnrollment> _repo = repo;
+
+        // ENROLL STUDENT
 
         public async Task<ApiResponse<string>> EnrollStudentAsync(
             int offeringId,
             int customerId,
-            Guid branchId,
-            Guid tenantId)
+            Guid branchId)
         {
             try
             {
-                // 1️⃣ Validate Offering with Tenant + Branch
-                var offering = await _db.CourseOfferings
+                var tenantId = _tenantProvider.TenantId;
+
+                var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
+
+                if (!allowedBranches.Contains(branchId))
+                    return ApiResponseFactory.Failure<string>(
+                        "You don't have access to this branch");
+
+                // Validate Offering
+                var offering = await _db.ProductOfferings
                     .FirstOrDefaultAsync(o =>
                         o.OfferingId == offeringId &&
                         o.TenantId == tenantId &&
@@ -32,7 +50,7 @@ namespace ShiftService.Services.Implementation
                     return ApiResponseFactory.Failure<string>(
                         "Invalid batch for this branch");
 
-                // 2️⃣ Validate Customer belongs to same Tenant + Branch
+                // Validate Customer
                 var customerExists = await _db.Customers
                     .AnyAsync(c =>
                         c.CustomerId == customerId &&
@@ -44,8 +62,8 @@ namespace ShiftService.Services.Implementation
                     return ApiResponseFactory.Failure<string>(
                         "Invalid customer for this branch");
 
-                // 3️⃣ Prevent Duplicate Enrollment
-                var alreadyEnrolled = await _db.StudentCourseEnrollments
+                // Prevent duplicate enrollment
+                var alreadyEnrolled = await _db.CustomerProductEnrollments
                     .AnyAsync(e =>
                         e.CustomerId == customerId &&
                         e.OfferingId == offeringId &&
@@ -55,7 +73,7 @@ namespace ShiftService.Services.Implementation
                     return ApiResponseFactory.Failure<string>(
                         "Student already enrolled in this batch");
 
-                var enrollment = new StudentCourseEnrollment
+                var enrollment = new CustomerProductEnrollment
                 {
                     CustomerId = customerId,
                     OfferingId = offeringId,
@@ -63,7 +81,7 @@ namespace ShiftService.Services.Implementation
                     IsActive = true
                 };
 
-                _db.StudentCourseEnrollments.Add(enrollment);
+                _db.CustomerProductEnrollments.Add(enrollment);
                 await _db.SaveChangesAsync();
 
                 return ApiResponseFactory.Success(
@@ -77,67 +95,78 @@ namespace ShiftService.Services.Implementation
             }
         }
 
-        public async Task<ApiResponse<List<StudentEnrollmentDto>>>
-         GetEnrollmentsByOfferingAsync(
-             int offeringId,
-             Guid branchId,
-             Guid tenantId)
+
+        // GET STUDENTS BY OFFERING
+
+        public async Task<ApiResponse<List<CustomerProductEnrollment>>> GetEnrollmentsByOfferingAsync(
+    PaginationRequest request,
+    bool includeInactive)
         {
             try
             {
-                var students = await _db.StudentCourseEnrollments
-                    .Where(e =>
-                        e.OfferingId == offeringId &&
-                        e.Offering.TenantId == tenantId &&
-                        e.Offering.BranchId == branchId &&
-                        e.IsActive)
-                    .Include(e => e.Customer)
-                    .Include(e => e.Offering)
-                        .ThenInclude(o => o.TrainerCourse)
-                            .ThenInclude(tc => tc.Product)
-                    .Select(e => new StudentEnrollmentDto
-                    {
-                        EnrollmentId = e.EnrollmentId,
-                        StudentName = e.Customer.CustomerName,
-                        CourseName = e.Offering.TrainerCourse.Product.ProductName,
-                        JoinDate = e.JoinDate
-                    })
-                    .ToListAsync();
+                var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
 
-                return ApiResponseFactory.Success(students);
+                var query = _db.CustomerProductEnrollments
+                    .AsNoTracking();
+
+                var paged = await _repo.GetPagedAsync(
+                    query,
+                    request,
+                    c => includeInactive || c.IsActive
+                );
+
+                return ApiResponseFactory.PagedSuccess(
+                    paged,
+                    "Trainer Product fetched successfully");
             }
             catch (Exception ex)
             {
-                return ApiResponseFactory.Failure<List<StudentEnrollmentDto>>(
-                    "Error fetching enrollments",
+                return ApiResponseFactory.Failure<List<CustomerProductEnrollment>>(
+                    "Database error occurred",
                     new List<string> { ex.Message });
             }
         }
 
 
-        public async Task<ApiResponse<string>>
-        RemoveEnrollmentAsync(
-            int enrollmentId,
-            Guid branchId,
-            Guid tenantId)
+        // REMOVE ENROLLMENT
+
+        public async Task<ApiResponse<string>> RemoveEnrollmentAsync(int enrollmentId)
         {
-            var enrollment = await _db.StudentCourseEnrollments
-                .Include(e => e.Offering)
-                .FirstOrDefaultAsync(e =>
-                    e.EnrollmentId == enrollmentId &&
-                    e.Offering.TenantId == tenantId &&
-                    e.Offering.BranchId == branchId);
+            try
+            {
+                var tenantId = _tenantProvider.TenantId;
 
-            if (enrollment == null)
+                var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
+
+                var enrollment = await _db.CustomerProductEnrollments
+                    .Include(e => e.Offering)
+                    .FirstOrDefaultAsync(e =>
+                        e.EnrollmentId == enrollmentId &&
+                        e.Offering.TenantId == tenantId);
+
+                if (enrollment == null)
+                    return ApiResponseFactory.Failure<string>(
+                        "Enrollment not found");
+
+                if (!allowedBranches.Contains(enrollment.Offering.BranchId))
+                    return ApiResponseFactory.Failure<string>(
+                        "You don't have access to this branch");
+
+                enrollment.IsActive = false;
+
+                await _db.SaveChangesAsync();
+
+                return ApiResponseFactory.Success(
+                    "Enrollment removed successfully");
+            }
+            catch (Exception ex)
+            {
                 return ApiResponseFactory.Failure<string>(
-                    "Enrollment not found for this branch");
-
-            enrollment.IsActive = false;
-            await _db.SaveChangesAsync();
-
-            return ApiResponseFactory.Success(
-                "Enrollment removed successfully");
+                    "Database error occurred",
+                    new List<string> { ex.Message });
+            }
         }
+
 
     }
 }

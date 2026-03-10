@@ -422,6 +422,8 @@ namespace ProviGo.Common.Migrations
                 {
                     ShiftId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    TenantId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    BranchId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     ShiftName = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false),
@@ -430,6 +432,18 @@ namespace ProviGo.Common.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Shifts", x => x.ShiftId);
+                    table.ForeignKey(
+                        name: "FK_Shifts_Branches_BranchId",
+                        column: x => x.BranchId,
+                        principalTable: "Branches",
+                        principalColumn: "BranchId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Shifts_TenantDetails_TenantId",
+                        column: x => x.TenantId,
+                        principalTable: "TenantDetails",
+                        principalColumn: "TenantId",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_Shifts_Users_UserId",
                         column: x => x.UserId,
@@ -528,10 +542,10 @@ namespace ProviGo.Common.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "TrainerCourses",
+                name: "TrainerProducts",
                 columns: table => new
                 {
-                    TrainerCourseId = table.Column<int>(type: "int", nullable: false)
+                    TrainerProductId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     TenantId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     BranchId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
@@ -541,15 +555,15 @@ namespace ProviGo.Common.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_TrainerCourses", x => x.TrainerCourseId);
+                    table.PrimaryKey("PK_TrainerProducts", x => x.TrainerProductId);
                     table.ForeignKey(
-                        name: "FK_TrainerCourses_Products_ProductId",
+                        name: "FK_TrainerProducts_Products_ProductId",
                         column: x => x.ProductId,
                         principalTable: "Products",
                         principalColumn: "ProductId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_TrainerCourses_Users_TrainerId",
+                        name: "FK_TrainerProducts_Users_TrainerId",
                         column: x => x.TrainerId,
                         principalTable: "Users",
                         principalColumn: "UserId",
@@ -821,7 +835,7 @@ namespace ProviGo.Common.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "CourseOfferings",
+                name: "ProductOfferings",
                 columns: table => new
                 {
                     OfferingId = table.Column<int>(type: "int", nullable: false)
@@ -836,18 +850,18 @@ namespace ProviGo.Common.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_CourseOfferings", x => x.OfferingId);
+                    table.PrimaryKey("PK_ProductOfferings", x => x.OfferingId);
                     table.ForeignKey(
-                        name: "FK_CourseOfferings_Shifts_ShiftId",
+                        name: "FK_ProductOfferings_Shifts_ShiftId",
                         column: x => x.ShiftId,
                         principalTable: "Shifts",
                         principalColumn: "ShiftId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_CourseOfferings_TrainerCourses_TrainerCourseId",
+                        name: "FK_ProductOfferings_TrainerProducts_TrainerCourseId",
                         column: x => x.TrainerCourseId,
-                        principalTable: "TrainerCourses",
-                        principalColumn: "TrainerCourseId",
+                        principalTable: "TrainerProducts",
+                        principalColumn: "TrainerProductId",
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
@@ -958,7 +972,7 @@ namespace ProviGo.Common.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "StudentCourseEnrollments",
+                name: "CustomerProductEnrollments",
                 columns: table => new
                 {
                     EnrollmentId = table.Column<int>(type: "int", nullable: false)
@@ -970,18 +984,18 @@ namespace ProviGo.Common.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_StudentCourseEnrollments", x => x.EnrollmentId);
+                    table.PrimaryKey("PK_CustomerProductEnrollments", x => x.EnrollmentId);
                     table.ForeignKey(
-                        name: "FK_StudentCourseEnrollments_CourseOfferings_OfferingId",
-                        column: x => x.OfferingId,
-                        principalTable: "CourseOfferings",
-                        principalColumn: "OfferingId",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_StudentCourseEnrollments_Customers_CustomerId",
+                        name: "FK_CustomerProductEnrollments_Customers_CustomerId",
                         column: x => x.CustomerId,
                         principalTable: "Customers",
                         principalColumn: "CustomerId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_CustomerProductEnrollments_ProductOfferings_OfferingId",
+                        column: x => x.OfferingId,
+                        principalTable: "ProductOfferings",
+                        principalColumn: "OfferingId",
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
@@ -1022,14 +1036,14 @@ namespace ProviGo.Common.Migrations
                 column: "TenantId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CourseOfferings_ShiftId",
-                table: "CourseOfferings",
-                column: "ShiftId");
+                name: "IX_CustomerProductEnrollments_CustomerId",
+                table: "CustomerProductEnrollments",
+                column: "CustomerId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CourseOfferings_TrainerCourseId",
-                table: "CourseOfferings",
-                column: "TrainerCourseId");
+                name: "IX_CustomerProductEnrollments_OfferingId",
+                table: "CustomerProductEnrollments",
+                column: "OfferingId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Customers_BranchId",
@@ -1154,6 +1168,16 @@ namespace ProviGo.Common.Migrations
                 column: "PaymentId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_ProductOfferings_ShiftId",
+                table: "ProductOfferings",
+                column: "ShiftId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductOfferings_TrainerCourseId",
+                table: "ProductOfferings",
+                column: "TrainerCourseId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Products_BranchId",
                 table: "Products",
                 column: "BranchId");
@@ -1185,6 +1209,16 @@ namespace ProviGo.Common.Migrations
                 column: "TenantId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Shifts_BranchId",
+                table: "Shifts",
+                column: "BranchId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Shifts_TenantId",
+                table: "Shifts",
+                column: "TenantId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Shifts_UserId",
                 table: "Shifts",
                 column: "UserId");
@@ -1193,16 +1227,6 @@ namespace ProviGo.Common.Migrations
                 name: "IX_States_CountryId",
                 table: "States",
                 column: "CountryId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_StudentCourseEnrollments_CustomerId",
-                table: "StudentCourseEnrollments",
-                column: "CustomerId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_StudentCourseEnrollments_OfferingId",
-                table: "StudentCourseEnrollments",
-                column: "OfferingId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Subscriptions_PlanId",
@@ -1226,13 +1250,13 @@ namespace ProviGo.Common.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_TrainerCourses_ProductId",
-                table: "TrainerCourses",
+                name: "IX_TrainerProducts_ProductId",
+                table: "TrainerProducts",
                 column: "ProductId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_TrainerCourses_TrainerId",
-                table: "TrainerCourses",
+                name: "IX_TrainerProducts_TrainerId",
+                table: "TrainerProducts",
                 column: "TrainerId");
 
             migrationBuilder.CreateIndex(
@@ -1264,6 +1288,9 @@ namespace ProviGo.Common.Migrations
                 name: "AttendanceRecords");
 
             migrationBuilder.DropTable(
+                name: "CustomerProductEnrollments");
+
+            migrationBuilder.DropTable(
                 name: "InvoiceItems");
 
             migrationBuilder.DropTable(
@@ -1291,9 +1318,6 @@ namespace ProviGo.Common.Migrations
                 name: "States");
 
             migrationBuilder.DropTable(
-                name: "StudentCourseEnrollments");
-
-            migrationBuilder.DropTable(
                 name: "Subscriptions");
 
             migrationBuilder.DropTable(
@@ -1301,6 +1325,9 @@ namespace ProviGo.Common.Migrations
 
             migrationBuilder.DropTable(
                 name: "UsersLogs");
+
+            migrationBuilder.DropTable(
+                name: "ProductOfferings");
 
             migrationBuilder.DropTable(
                 name: "Invoices");
@@ -1315,22 +1342,16 @@ namespace ProviGo.Common.Migrations
                 name: "Countries");
 
             migrationBuilder.DropTable(
-                name: "CourseOfferings");
-
-            migrationBuilder.DropTable(
                 name: "Plans");
-
-            migrationBuilder.DropTable(
-                name: "Orders");
 
             migrationBuilder.DropTable(
                 name: "Shifts");
 
             migrationBuilder.DropTable(
-                name: "TrainerCourses");
+                name: "TrainerProducts");
 
             migrationBuilder.DropTable(
-                name: "Customers");
+                name: "Orders");
 
             migrationBuilder.DropTable(
                 name: "Products");
@@ -1339,7 +1360,7 @@ namespace ProviGo.Common.Migrations
                 name: "Users");
 
             migrationBuilder.DropTable(
-                name: "Branches");
+                name: "Customers");
 
             migrationBuilder.DropTable(
                 name: "Discounts");
@@ -1349,6 +1370,9 @@ namespace ProviGo.Common.Migrations
 
             migrationBuilder.DropTable(
                 name: "UserRoles");
+
+            migrationBuilder.DropTable(
+                name: "Branches");
 
             migrationBuilder.DropTable(
                 name: "TenantDetails");

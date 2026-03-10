@@ -13,10 +13,18 @@ namespace ProviGo.Common.Models
     {
         [Key]
         public int ShiftId { get; set; }
+        public Guid TenantId { get; set; }
+        public Guid BranchId { get; set; }
 
         [Required, MaxLength(100)]
         public string ShiftName { get; set; } = string.Empty;
 
         public bool IsActive { get; set; } = true;
+
+        [ForeignKey(nameof(TenantId))]
+        public TenantDetails Tenant { get; set; }
+
+        [ForeignKey(nameof(BranchId))]
+        public Branch Branch { get; set; }
     }
 }

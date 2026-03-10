@@ -16,12 +16,17 @@ using System.Text;
 // Builder
 var builder = WebApplication.CreateBuilder(args);
 
-// 🔹 Application Services
-builder.Services.AddScoped<ICustomerService, CustomerService.Services.Implementation.CustomerService>();
+// Tenant & User Services 
+builder.Services.AddScoped<TenantProvider>();
+builder.Services.AddScoped<CurrentUserService>();
+builder.Services.AddScoped<BranchAccessService>();
+
+// Generic Repository
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
-builder.Services.AddScoped<TenantProvider>();
-builder.Services.AddScoped<BranchAccessService>();
+// Application Services
+builder.Services.AddScoped<ICustomerService, CustomerService.Services.Implementation.CustomerService>();
+
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddMemoryCache();
 builder.Services.AddCommonPagination();

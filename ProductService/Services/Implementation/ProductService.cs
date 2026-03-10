@@ -4,7 +4,6 @@ using ProductService.Services.Interface;
 using ProviGo.Common.Data;
 using ProviGo.Common.Models;
 using ProviGo.Common.Pagination;
-using ProviGo.Common.Providers;
 using ProviGo.Common.Response;
 using ProviGo.Common.Services;
 
@@ -13,57 +12,47 @@ namespace ProductService.Services.Implementation
     public class ProductService(
         TenantDbContext db,
         IGenericRepository<Product> repo,
-        TenantProvider tenantProvider,
         BranchAccessService branchAccess) : IProductService
     {
         private readonly TenantDbContext _db = db;
         private readonly IGenericRepository<Product> _repo = repo;
-        private readonly TenantProvider _tenantProvider = tenantProvider;
         private readonly BranchAccessService _branchAccess = branchAccess;
 
 
         // CREATE PRODUCT
-        public async Task<ApiResponse<ProductResponseDto>> CreateProductAsync(
-            ProductCreateDto dto)
+        public async Task<ApiResponse<ProductResponseDto>> CreateProductAsync(ProductCreateDto dto)
         {
             try
             {
                 var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
 
                 if (!allowedBranches.Contains(dto.BranchId))
-                {
                     return ApiResponseFactory.Failure<ProductResponseDto>(
                         "You don't have access to this branch");
-                }
 
-                var exists = await _db.Products
-                    .AnyAsync(p =>
-                        p.BranchId == dto.BranchId &&
-                        p.ProductName == dto.ProductName);
+                var exists = await _db.Products.AnyAsync(p =>
+                    p.BranchId == dto.BranchId &&
+                    p.ProductName == dto.ProductName);
 
                 if (exists)
-                {
                     return ApiResponseFactory.Failure<ProductResponseDto>(
-                        "This product already exists for this branch");
-                }
+                        "Product already exists");
 
                 var product = new Product
                 {
-                    TenantId = _tenantProvider.TenantId,
                     BranchId = dto.BranchId,
                     ProductName = dto.ProductName,
                     TotalFee = dto.TotalFee,
-                    IsActive = true,
-                    CreatedOn = DateTime.UtcNow
+                    CreatedOn = DateTime.UtcNow,
+                    IsActive = true
                 };
 
                 _db.Products.Add(product);
                 await _db.SaveChangesAsync();
 
-                var responseDto = new ProductResponseDto
+                var response = new ProductResponseDto
                 {
                     ProductId = product.ProductId,
-                    TenantId = product.TenantId,
                     BranchId = product.BranchId,
                     ProductName = product.ProductName,
                     TotalFee = product.TotalFee,
@@ -71,10 +60,10 @@ namespace ProductService.Services.Implementation
                 };
 
                 return ApiResponseFactory.Success(
-                    responseDto,
+                    response,
                     "Product created successfully");
             }
-            catch (DbUpdateException)
+            catch (Exception)
             {
                 return ApiResponseFactory.Failure<ProductResponseDto>(
                     "Database error occurred");
@@ -95,21 +84,21 @@ namespace ProductService.Services.Implementation
                     .Where(p => allowedBranches.Contains(p.BranchId))
                     .AsNoTracking();
 
-                var pagedResult = await _repo.GetPagedAsync(
+                var paged = await _repo.GetPagedAsync(
                     query,
                     request,
                     p => includeInactive || p.IsActive
                 );
 
                 return ApiResponseFactory.PagedSuccess(
-                    pagedResult,
+                    paged,
                     "Products fetched successfully");
             }
             catch (Exception ex)
             {
                 return ApiResponseFactory.Failure<List<Product>>(
-                    ex.Message,
-                    ["Database error occurred"]);
+                    "Database error occurred",
+                    new List<string> { ex.Message });
             }
         }
 
@@ -123,19 +112,31 @@ namespace ProductService.Services.Implementation
             {
                 var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
 
+                // 1️⃣ Get product first
+                var product = await _db.Products
+                    .FirstOrDefaultAsync(p => p.ProductId == productId);
+
+                if (product == null)
+                    return ApiResponseFactory.Failure<string>("Product not found");
+
+                // 2️⃣ Branch access check
+                if (!allowedBranches.Contains(product.BranchId))
+                    return ApiResponseFactory.Failure<string>(
+                        "You don't have access to this branch");
+
+                // 3️⃣ Duplicate name check
                 var exists = await _db.Products.AnyAsync(p =>
-                    allowedBranches.Contains(p.BranchId) &&
-                    p.ProductName == dto.ProductName &&
-                    p.ProductId != productId);
+                    p.ProductId != productId &&
+                    p.BranchId == product.BranchId &&
+                    p.ProductName == dto.ProductName);
 
                 if (exists)
                     return ApiResponseFactory.Failure<string>(
                         "Product already exists");
 
+                // 4️⃣ Update
                 int affectedRows = await _db.Products
-                    .Where(p =>
-                        p.ProductId == productId &&
-                        allowedBranches.Contains(p.BranchId))
+                    .Where(p => p.ProductId == productId)
                     .ExecuteUpdateAsync(s => s
                         .SetProperty(p => p.ProductName, dto.ProductName)
                         .SetProperty(p => p.TotalFee, dto.TotalFee)
@@ -143,13 +144,12 @@ namespace ProductService.Services.Implementation
                     );
 
                 if (affectedRows == 0)
-                    return ApiResponseFactory.Failure<string>(
-                        "Product not found");
+                    return ApiResponseFactory.Failure<string>("Update failed");
 
                 return ApiResponseFactory.Success(
                     "Product updated successfully");
             }
-            catch (DbUpdateException)
+            catch (Exception)
             {
                 return ApiResponseFactory.Failure<string>(
                     "Database error occurred");
@@ -158,23 +158,21 @@ namespace ProductService.Services.Implementation
 
 
         // DELETE PRODUCT
-        public async Task<ApiResponse<string>> RemoveProductAsync(
-            int productId)
+        public async Task<ApiResponse<string>> RemoveProductAsync(int productId)
         {
             try
             {
                 var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
 
                 var product = await _db.Products
-                    .FirstOrDefaultAsync(p =>
-                        p.ProductId == productId &&
-                        allowedBranches.Contains(p.BranchId));
+                    .FirstOrDefaultAsync(p => p.ProductId == productId);
 
                 if (product == null)
-                {
+                    return ApiResponseFactory.Failure<string>("Product not found");
+
+                if (!allowedBranches.Contains(product.BranchId))
                     return ApiResponseFactory.Failure<string>(
-                        "Product not found");
-                }
+                        "You don't have access to this branch");
 
                 _db.Products.Remove(product);
                 await _db.SaveChangesAsync();
@@ -189,7 +187,5 @@ namespace ProductService.Services.Implementation
                     new List<string> { ex.Message });
             }
         }
-
-
     }
 }

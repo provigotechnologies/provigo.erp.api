@@ -8,8 +8,8 @@ using System.Threading.Tasks;
 
 namespace ProviGo.Common.Models
 {
-    [Table("CourseOfferings")]
-    public class CourseOffering
+    [Table("ProductOfferings")]
+    public class ProductOffering
     {
         [Key]
         public int OfferingId { get; set; }
@@ -26,7 +26,7 @@ namespace ProviGo.Common.Models
         public bool IsActive { get; set; } = true;
 
         [ForeignKey(nameof(TrainerCourseId))]
-        public TrainerCourse TrainerCourse { get; set; }
+        public TrainerProduct TrainerCourse { get; set; }
 
         [ForeignKey(nameof(ShiftId))]
         public Shift Shift { get; set; }

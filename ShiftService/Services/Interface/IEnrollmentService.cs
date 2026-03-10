@@ -1,4 +1,5 @@
 ﻿using ProviGo.Common.Models;
+using ProviGo.Common.Pagination;
 using ProviGo.Common.Response;
 using ShiftService.DTOs;
 
@@ -9,18 +10,12 @@ namespace ShiftService.Services.Interface
         Task<ApiResponse<string>> EnrollStudentAsync(
             int offeringId,
             int customerId,
-            Guid branchId,
-            Guid tenantId);
+            Guid branchId);
 
-        Task<ApiResponse<List<StudentEnrollmentDto>>>
-            GetEnrollmentsByOfferingAsync(
-                int offeringId,
-                Guid branchId,
-                Guid tenantId);
+        Task<ApiResponse<List<CustomerProductEnrollment>>> GetEnrollmentsByOfferingAsync(
+            PaginationRequest request,
+            bool includeInactive);
 
-        Task<ApiResponse<string>> RemoveEnrollmentAsync(
-            int enrollmentId,
-            Guid branchId,
-            Guid tenantId);
+        Task<ApiResponse<string>> RemoveEnrollmentAsync(int enrollmentId);
     }
 }

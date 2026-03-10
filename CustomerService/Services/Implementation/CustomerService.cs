@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using ProviGo.Common.Data;
 using ProviGo.Common.Models;
 using ProviGo.Common.Pagination;
-using ProviGo.Common.Providers;
 using ProviGo.Common.Response;
 using ProviGo.Common.Services;
 
@@ -13,88 +12,73 @@ namespace CustomerService.Services.Implementation
     public class CustomerService(
         TenantDbContext db,
         IGenericRepository<Customer> repo,
-        TenantProvider tenantProvider,
         BranchAccessService branchAccess) : ICustomerService
     {
         private readonly TenantDbContext _db = db;
         private readonly IGenericRepository<Customer> _repo = repo;
-        private readonly TenantProvider _tenantProvider = tenantProvider;
         private readonly BranchAccessService _branchAccess = branchAccess;
-
 
         // CREATE CUSTOMER
         public async Task<ApiResponse<CustomerResponseDto>> CreateCustomerAsync(CustomerCreateDto dto)
         {
-            try 
+            try
             {
-                    var tenantId = _tenantProvider.TenantId;
+                var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
 
-                    var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
+                if (!allowedBranches.Contains(dto.BranchId))
+                    return ApiResponseFactory.Failure<CustomerResponseDto>(
+                        "You don't have access to this branch");
 
-                    if (!allowedBranches.Contains(dto.BranchId))
-                    {
-                        return ApiResponseFactory.Failure<CustomerResponseDto>(
-                            "You don't have access to this branch");
-                    }
+                var emailExists = await _db.Customers
+                    .AnyAsync(c =>
+                        c.BranchId == dto.BranchId &&
+                        c.Email == dto.Email);
 
-                    var emailExists = await _db.Customers
-                        .AnyAsync(i =>
-                            i.TenantId == tenantId &&
-                            i.BranchId == dto.BranchId &&
-                            i.Email == dto.Email);
+                if (emailExists)
+                    return ApiResponseFactory.Failure<CustomerResponseDto>(
+                        "Customer email already exists");
 
-                    if (emailExists)
-                    {
-                        return ApiResponseFactory.Failure<CustomerResponseDto>(
-                            "This email is already registered.");
-                    }
+                var customer = new Customer
+                {
+                    BranchId = dto.BranchId,
+                    CustomerName = dto.FullName,
+                    Phone = dto.Phone,
+                    Email = dto.Email,
+                    Address = dto.Address,
+                    JoinDate = dto.JoinDate == default
+                        ? DateTime.UtcNow
+                        : dto.JoinDate,
+                    IsActive = true
+                };
 
-                    var customer = new Customer
-                    {
-                        TenantId = tenantId,
-                        BranchId = dto.BranchId,
-                        CustomerName = dto.FullName,
-                        Phone = dto.Phone,
-                        Email = dto.Email,
-                        Address = dto.Address,
-                        IsActive = true,
-                        JoinDate = dto.JoinDate == default
-                            ? DateTime.UtcNow
-                            : dto.JoinDate
-                    };
+                _db.Customers.Add(customer);
+                await _db.SaveChangesAsync();
 
-                    _db.Customers.Add(customer);
-                    await _db.SaveChangesAsync();
+                var response = new CustomerResponseDto
+                {
+                    CustomerId = customer.CustomerId,
+                    FullName = customer.CustomerName,
+                    Phone = customer.Phone,
+                    Email = customer.Email,
+                    Address = customer.Address,
+                    JoinDate = customer.JoinDate,
+                    IsActive = customer.IsActive
+                };
 
-                    var responseDto = new CustomerResponseDto
-                    {
-                        CustomerId = customer.CustomerId,
-                        FullName = customer.CustomerName,
-                        Phone = customer.Phone,
-                        Email = customer.Email,
-                        Address = customer.Address,
-                        JoinDate = customer.JoinDate,
-                        IsActive = customer.IsActive
-                    };
-
-                    return ApiResponseFactory.Success(
-                        responseDto,
-                        "Customer created successfully");
-                }
-            catch (DbUpdateException ex)
+                return ApiResponseFactory.Success(response, "Customer created successfully");
+            }
+            catch (Exception)
             {
                 return ApiResponseFactory.Failure<CustomerResponseDto>("Database error occurred");
             }
         }
 
 
-
         // GET CUSTOMERS
         public async Task<ApiResponse<List<Customer>>> GetCustomersAsync(
-             PaginationRequest request,
-             bool includeInactive)
+            PaginationRequest request,
+            bool includeInactive)
         {
-
             try
             {
                 var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
@@ -116,33 +100,42 @@ namespace CustomerService.Services.Implementation
             catch (Exception ex)
             {
                 return ApiResponseFactory.Failure<List<Customer>>(
-                    ex.Message,
-                    ["Database error occurred"]);
-            }  
+                    "Database error occurred",
+                    new List<string> { ex.Message });
+            }
         }
 
 
         // UPDATE CUSTOMER
         public async Task<ApiResponse<string>> UpdateCustomerAsync(
-             int customerId,
-             CustomerUpdateDto dto)
+            int customerId,
+            CustomerUpdateDto dto)
         {
             try
             {
                 var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
 
-                var exists = await _db.Customers.AnyAsync(c =>
-                    allowedBranches.Contains(c.BranchId) &&
+                var customer = await _db.Customers
+                    .FirstOrDefaultAsync(c => c.CustomerId == customerId);
+
+                if (customer == null)
+                    return ApiResponseFactory.Failure<string>("Customer not found");
+
+                if (!allowedBranches.Contains(customer.BranchId))
+                    return ApiResponseFactory.Failure<string>(
+                        "You don't have access to this branch");
+
+                var emailExists = await _db.Customers.AnyAsync(c =>
                     c.CustomerId != customerId &&
+                    c.BranchId == customer.BranchId &&
                     c.Email == dto.Email);
 
-                if (exists)
-                    return ApiResponseFactory.Failure<string>("Customer email already exists");
+                if (emailExists)
+                    return ApiResponseFactory.Failure<string>(
+                        "Customer email already exists");
 
                 int affectedRows = await _db.Customers
-                    .Where(c =>
-                        c.CustomerId == customerId &&
-                        allowedBranches.Contains(c.BranchId))
+                    .Where(c => c.CustomerId == customerId)
                     .ExecuteUpdateAsync(s => s
                         .SetProperty(c => c.CustomerName, dto.FullName)
                         .SetProperty(c => c.Email, dto.Email)
@@ -153,11 +146,11 @@ namespace CustomerService.Services.Implementation
                     );
 
                 if (affectedRows == 0)
-                    return ApiResponseFactory.Failure<string>("Customer not found");
+                    return ApiResponseFactory.Failure<string>("Update failed");
 
                 return ApiResponseFactory.Success("Customer updated successfully");
             }
-            catch (DbUpdateException)
+            catch (Exception)
             {
                 return ApiResponseFactory.Failure<string>("Database error occurred");
             }
@@ -172,18 +165,17 @@ namespace CustomerService.Services.Implementation
                 var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
 
                 var customer = await _db.Customers
-                .FirstOrDefaultAsync(c =>
-                    c.CustomerId == customerId &&
-                    allowedBranches.Contains(c.BranchId));
+                    .FirstOrDefaultAsync(c => c.CustomerId == customerId);
 
                 if (customer == null)
                     return ApiResponseFactory.Failure<string>("Customer not found");
 
-                _db.Customers.Remove(customer);
-                int affectedRows = await _db.SaveChangesAsync();
+                if (!allowedBranches.Contains(customer.BranchId))
+                    return ApiResponseFactory.Failure<string>(
+                        "You don't have access to this branch");
 
-                if (affectedRows == 0)
-                    return ApiResponseFactory.Failure<string>("Delete failed");
+                _db.Customers.Remove(customer);
+                await _db.SaveChangesAsync();
 
                 return ApiResponseFactory.Success(
                     $"Customer {customerId} deleted successfully");
@@ -199,8 +191,3 @@ namespace CustomerService.Services.Implementation
 
     }
 }
-
-
-
-
- 

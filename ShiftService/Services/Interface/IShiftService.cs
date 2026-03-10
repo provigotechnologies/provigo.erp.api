@@ -21,9 +21,5 @@ namespace ShiftService.Services.Interface
         Task<ApiResponse<string>> RemoveShiftAsync(
             int shiftId);
 
-        Task<ApiResponse<string>> CreateCourseOfferingAsync(
-       CourseOfferingCreateDto dto,
-       Guid branchId,
-       Guid tenantId);
     }
 }

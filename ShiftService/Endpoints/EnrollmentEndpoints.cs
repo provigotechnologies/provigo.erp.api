@@ -1,4 +1,5 @@
-﻿using ProviGo.Common.Providers;
+﻿using ProviGo.Common.Pagination;
+using ProviGo.Common.Providers;
 using ProviGo.Common.Response;
 using ShiftService.DTOs;
 using ShiftService.Services;
@@ -18,11 +19,10 @@ namespace ShiftService.Endpoints
                 int offeringId,
                 int customerId,
                 Guid branchId,
-                TenantProvider shiftProvider,
                 IEnrollmentService enrollmentService) =>
             {
                 var response = await enrollmentService
-                    .EnrollStudentAsync(offeringId, customerId, branchId, shiftProvider.TenantId);
+                    .EnrollStudentAsync(offeringId, customerId, branchId);
 
                 return response.Success
                     ? Results.Ok(response)
@@ -32,13 +32,12 @@ namespace ShiftService.Endpoints
             // 🔹 Get Students By Batch
 
             app.MapGet("/api/enrollments/{offeringId:int}", async (
-                int offeringId,
-                Guid branchId,
-                TenantProvider shiftProvider,
+                [AsParameters] PaginationRequest request,
+                bool includeInactive,
                 IEnrollmentService enrollmentService) =>
             {
                 var response = await enrollmentService
-                    .GetEnrollmentsByOfferingAsync(offeringId, branchId, shiftProvider.TenantId);
+                    .GetEnrollmentsByOfferingAsync(request, includeInactive);
 
                 return Results.Ok(response);
             });
@@ -47,12 +46,10 @@ namespace ShiftService.Endpoints
 
             app.MapDelete("/api/enrollments/{enrollmentId:int}", async (
                 int enrollmentId,
-                Guid branchId,
-                TenantProvider shiftProvider,
                 IEnrollmentService enrollmentService) =>
             {
                 var response = await enrollmentService
-                    .RemoveEnrollmentAsync(enrollmentId, branchId, shiftProvider.TenantId);
+                    .RemoveEnrollmentAsync(enrollmentId);
 
                 return response.Success
                     ? Results.Ok(response)

@@ -165,8 +165,8 @@ namespace ProviGo.Common.Data
         public DbSet<Discount> Discounts { get; set; }
         public DbSet<Tax> Taxes { get; set; }
 
-        public DbSet<TrainerCourse> TrainerCourses { get; set; }
-        public DbSet<CourseOffering> CourseOfferings { get; set; }
+        public DbSet<TrainerProduct> TrainerProducts { get; set; }
+        public DbSet<ProductOffering> ProductOfferings { get; set; }
 
         // ===== CUSTOMERS =====
 
@@ -195,7 +195,7 @@ namespace ProviGo.Common.Data
         // ===== SHIFT =====
 
         public DbSet<Shift> Shifts { get; set; }
-        public DbSet<StudentCourseEnrollment> StudentCourseEnrollments { get; set; }
+        public DbSet<CustomerProductEnrollment> CustomerProductEnrollments { get; set; }
 
         // ===== INVOICE =====
 

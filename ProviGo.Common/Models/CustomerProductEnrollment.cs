@@ -8,8 +8,8 @@ using System.Threading.Tasks;
 
 namespace ProviGo.Common.Models
 {
-    [Table("StudentCourseEnrollments")]
-    public class StudentCourseEnrollment
+    [Table("CustomerProductEnrollments")]
+    public class CustomerProductEnrollment
     {
         [Key]
         public int EnrollmentId { get; set; }
@@ -26,6 +26,6 @@ namespace ProviGo.Common.Models
         public Customer Customer { get; set; }
 
         [ForeignKey(nameof(OfferingId))]
-        public CourseOffering Offering { get; set; }
+        public ProductOffering Offering { get; set; }
     }
 }

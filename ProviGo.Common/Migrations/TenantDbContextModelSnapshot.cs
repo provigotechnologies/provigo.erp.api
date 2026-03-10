@@ -181,44 +181,6 @@ namespace ProviGo.Common.Migrations
                     b.ToTable("Countries");
                 });
 
-            modelBuilder.Entity("ProviGo.Common.Models.CourseOffering", b =>
-                {
-                    b.Property<int>("OfferingId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("OfferingId"));
-
-                    b.Property<Guid>("BranchId")
-                        .HasColumnType("char(36)");
-
-                    b.Property<TimeSpan>("EndTime")
-                        .HasColumnType("time(6)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<int>("ShiftId")
-                        .HasColumnType("int");
-
-                    b.Property<TimeSpan>("StartTime")
-                        .HasColumnType("time(6)");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("char(36)");
-
-                    b.Property<int>("TrainerCourseId")
-                        .HasColumnType("int");
-
-                    b.HasKey("OfferingId");
-
-                    b.HasIndex("ShiftId");
-
-                    b.HasIndex("TrainerCourseId");
-
-                    b.ToTable("CourseOfferings");
-                });
-
             modelBuilder.Entity("ProviGo.Common.Models.Customer", b =>
                 {
                     b.Property<int>("CustomerId")
@@ -278,6 +240,35 @@ namespace ProviGo.Common.Migrations
                         .IsUnique();
 
                     b.ToTable("Customers");
+                });
+
+            modelBuilder.Entity("ProviGo.Common.Models.CustomerProductEnrollment", b =>
+                {
+                    b.Property<int>("EnrollmentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("EnrollmentId"));
+
+                    b.Property<int>("CustomerId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<DateTime>("JoinDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("OfferingId")
+                        .HasColumnType("int");
+
+                    b.HasKey("EnrollmentId");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("OfferingId");
+
+                    b.ToTable("CustomerProductEnrollments");
                 });
 
             modelBuilder.Entity("ProviGo.Common.Models.Discount", b =>
@@ -904,6 +895,44 @@ namespace ProviGo.Common.Migrations
                     b.ToTable("Products");
                 });
 
+            modelBuilder.Entity("ProviGo.Common.Models.ProductOffering", b =>
+                {
+                    b.Property<int>("OfferingId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("OfferingId"));
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<TimeSpan>("EndTime")
+                        .HasColumnType("time(6)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("ShiftId")
+                        .HasColumnType("int");
+
+                    b.Property<TimeSpan>("StartTime")
+                        .HasColumnType("time(6)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<int>("TrainerCourseId")
+                        .HasColumnType("int");
+
+                    b.HasKey("OfferingId");
+
+                    b.HasIndex("ShiftId");
+
+                    b.HasIndex("TrainerCourseId");
+
+                    b.ToTable("ProductOfferings");
+                });
+
             modelBuilder.Entity("ProviGo.Common.Models.Refund", b =>
                 {
                     b.Property<int>("RefundId")
@@ -963,6 +992,9 @@ namespace ProviGo.Common.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ShiftId"));
 
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("char(36)");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)");
 
@@ -971,10 +1003,17 @@ namespace ProviGo.Common.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("char(36)");
+
                     b.Property<Guid?>("UserId")
                         .HasColumnType("char(36)");
 
                     b.HasKey("ShiftId");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("TenantId");
 
                     b.HasIndex("UserId");
 
@@ -1007,35 +1046,6 @@ namespace ProviGo.Common.Migrations
                     b.HasIndex("CountryId");
 
                     b.ToTable("States");
-                });
-
-            modelBuilder.Entity("ProviGo.Common.Models.StudentCourseEnrollment", b =>
-                {
-                    b.Property<int>("EnrollmentId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("EnrollmentId"));
-
-                    b.Property<int>("CustomerId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<DateTime>("JoinDate")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<int>("OfferingId")
-                        .HasColumnType("int");
-
-                    b.HasKey("EnrollmentId");
-
-                    b.HasIndex("CustomerId");
-
-                    b.HasIndex("OfferingId");
-
-                    b.ToTable("StudentCourseEnrollments");
                 });
 
             modelBuilder.Entity("ProviGo.Common.Models.Subscription", b =>
@@ -1150,13 +1160,13 @@ namespace ProviGo.Common.Migrations
                     b.ToTable("TenantDetails");
                 });
 
-            modelBuilder.Entity("ProviGo.Common.Models.TrainerCourse", b =>
+            modelBuilder.Entity("ProviGo.Common.Models.TrainerProduct", b =>
                 {
-                    b.Property<int>("TrainerCourseId")
+                    b.Property<int>("TrainerProductId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("TrainerCourseId"));
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("TrainerProductId"));
 
                     b.Property<Guid>("BranchId")
                         .HasColumnType("char(36)");
@@ -1173,13 +1183,13 @@ namespace ProviGo.Common.Migrations
                     b.Property<Guid>("TrainerId")
                         .HasColumnType("char(36)");
 
-                    b.HasKey("TrainerCourseId");
+                    b.HasKey("TrainerProductId");
 
                     b.HasIndex("ProductId");
 
                     b.HasIndex("TrainerId");
 
-                    b.ToTable("TrainerCourses");
+                    b.ToTable("TrainerProducts");
                 });
 
             modelBuilder.Entity("ProviGo.Common.Models.User", b =>
@@ -1373,25 +1383,6 @@ namespace ProviGo.Common.Migrations
                     b.Navigation("TenantDetails");
                 });
 
-            modelBuilder.Entity("ProviGo.Common.Models.CourseOffering", b =>
-                {
-                    b.HasOne("ProviGo.Common.Models.Shift", "Shift")
-                        .WithMany()
-                        .HasForeignKey("ShiftId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("ProviGo.Common.Models.TrainerCourse", "TrainerCourse")
-                        .WithMany()
-                        .HasForeignKey("TrainerCourseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Shift");
-
-                    b.Navigation("TrainerCourse");
-                });
-
             modelBuilder.Entity("ProviGo.Common.Models.Customer", b =>
                 {
                     b.HasOne("ProviGo.Common.Models.Branch", "Branch")
@@ -1409,6 +1400,25 @@ namespace ProviGo.Common.Migrations
                     b.Navigation("Branch");
 
                     b.Navigation("TenantDetails");
+                });
+
+            modelBuilder.Entity("ProviGo.Common.Models.CustomerProductEnrollment", b =>
+                {
+                    b.HasOne("ProviGo.Common.Models.Customer", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ProviGo.Common.Models.ProductOffering", "Offering")
+                        .WithMany()
+                        .HasForeignKey("OfferingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("Offering");
                 });
 
             modelBuilder.Entity("ProviGo.Common.Models.Discount", b =>
@@ -1643,6 +1653,25 @@ namespace ProviGo.Common.Migrations
                     b.Navigation("TenantDetails");
                 });
 
+            modelBuilder.Entity("ProviGo.Common.Models.ProductOffering", b =>
+                {
+                    b.HasOne("ProviGo.Common.Models.Shift", "Shift")
+                        .WithMany()
+                        .HasForeignKey("ShiftId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ProviGo.Common.Models.TrainerProduct", "TrainerCourse")
+                        .WithMany()
+                        .HasForeignKey("TrainerCourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Shift");
+
+                    b.Navigation("TrainerCourse");
+                });
+
             modelBuilder.Entity("ProviGo.Common.Models.Refund", b =>
                 {
                     b.HasOne("ProviGo.Common.Models.Payment", "Payment")
@@ -1664,9 +1693,25 @@ namespace ProviGo.Common.Migrations
 
             modelBuilder.Entity("ProviGo.Common.Models.Shift", b =>
                 {
+                    b.HasOne("ProviGo.Common.Models.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ProviGo.Common.Models.TenantDetails", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("ProviGo.Common.Models.User", null)
                         .WithMany("Shifts")
                         .HasForeignKey("UserId");
+
+                    b.Navigation("Branch");
+
+                    b.Navigation("Tenant");
                 });
 
             modelBuilder.Entity("ProviGo.Common.Models.State", b =>
@@ -1678,25 +1723,6 @@ namespace ProviGo.Common.Migrations
                         .IsRequired();
 
                     b.Navigation("Country");
-                });
-
-            modelBuilder.Entity("ProviGo.Common.Models.StudentCourseEnrollment", b =>
-                {
-                    b.HasOne("ProviGo.Common.Models.Customer", "Customer")
-                        .WithMany()
-                        .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("ProviGo.Common.Models.CourseOffering", "Offering")
-                        .WithMany()
-                        .HasForeignKey("OfferingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Customer");
-
-                    b.Navigation("Offering");
                 });
 
             modelBuilder.Entity("ProviGo.Common.Models.Subscription", b =>
@@ -1729,7 +1755,7 @@ namespace ProviGo.Common.Migrations
                     b.Navigation("TenantDetails");
                 });
 
-            modelBuilder.Entity("ProviGo.Common.Models.TrainerCourse", b =>
+            modelBuilder.Entity("ProviGo.Common.Models.TrainerProduct", b =>
                 {
                     b.HasOne("ProviGo.Common.Models.Product", "Product")
                         .WithMany()
