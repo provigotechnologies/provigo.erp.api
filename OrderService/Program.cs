@@ -89,13 +89,9 @@ builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "Order Service API",
-        Version = "v1"
-    });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Order Service API", Version = "v1" });
 
-    // 🔐 JWT
+    // JWT Security Scheme
     var jwtScheme = new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -103,16 +99,11 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Reference = new OpenApiReference
-        {
-            Type = ReferenceType.SecurityScheme,
-            Id = JwtBearerDefaults.AuthenticationScheme
-        }
+        Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = JwtBearerDefaults.AuthenticationScheme }
     };
-
     c.AddSecurityDefinition(jwtScheme.Reference.Id, jwtScheme);
 
-    // 🏢 Tenant Header
+    // Tenant Header
     c.AddSecurityDefinition("TenantHeader", new OpenApiSecurityScheme
     {
         Name = "X-Tenant-Id",
@@ -121,39 +112,10 @@ builder.Services.AddSwaggerGen(c =>
         Description = "Enter Tenant Id"
     });
 
-    // 🏢 Branch Header
-    c.AddSecurityDefinition("BranchHeader", new OpenApiSecurityScheme
-    {
-        Name = "X-Branch-Id",
-        Type = SecuritySchemeType.ApiKey,
-        In = ParameterLocation.Header,
-        Description = "Enter Branch Id"
-    });
-
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "TenantHeader"
-                }
-            },
-            Array.Empty<string>()
-        },
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "BranchHeader"
-                }
-            },
-            Array.Empty<string>()
-        }
+        { jwtScheme, Array.Empty<string>() },
+        { new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "TenantHeader" } }, Array.Empty<string>() },
     });
 });
 

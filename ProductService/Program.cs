@@ -126,15 +126,6 @@ builder.Services.AddSwaggerGen(c =>
         Description = "Enter Tenant Id"
     });
 
-    // 🏢 Branch Header
-    c.AddSecurityDefinition("BranchHeader", new OpenApiSecurityScheme
-    {
-        Name = "X-Branch-Id",
-        Type = SecuritySchemeType.ApiKey,
-        In = ParameterLocation.Header,
-        Description = "Enter Branch Id"
-    });
-
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -148,17 +139,6 @@ builder.Services.AddSwaggerGen(c =>
             },
             Array.Empty<string>()
         },
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "BranchHeader"
-                }
-            },
-            Array.Empty<string>()
-        }
     });
 });
 

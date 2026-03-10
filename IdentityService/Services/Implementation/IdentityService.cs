@@ -42,14 +42,27 @@ namespace IdentityService.Services.Implementation
                     return ApiResponseFactory.Failure<UserResponse>("Invalid role.");
 
                 // Determine branches based on role
+                // Determine branches based on role
                 List<Guid> assignedBranches = role.RoleName switch
                 {
-                    "SuperAdmin" => new List<Guid>(), // no branches assigned
+                    "SuperAdmin" => new List<Guid>(),
                     "Admin" when branchIds != null && branchIds.Any() => branchIds,
                     "Admin" => throw new Exception("Admin must be assigned at least one branch"),
                     _ when branchIds != null && branchIds.Count == 1 => branchIds,
                     _ => throw new Exception("User must be assigned exactly one branch")
                 };
+
+                // Validate branch exists in tenant
+                if (assignedBranches.Any())
+                {
+                    var validBranches = await _db.Branches
+                        .Where(b => b.TenantId == tenantId && assignedBranches.Contains(b.BranchId))
+                        .Select(b => b.BranchId)
+                        .ToListAsync();
+
+                    if (validBranches.Count != assignedBranches.Count)
+                        return ApiResponseFactory.Failure<UserResponse>("Invalid branch selected");
+                }
 
                 // Create user
                 var user = new User
@@ -71,24 +84,16 @@ namespace IdentityService.Services.Implementation
                 await _db.Users.AddAsync(user);
 
                 // Assign branches 
-                if (assignedBranches.Any() && role.RoleName != "SuperAdmin")
+                if (assignedBranches.Any())
                 {
-                    // Only branches that exist in tenant
-                    var validBranches = await _db.Branches
-                        .Where(b => b.TenantId == tenantId && assignedBranches.Contains(b.BranchId))
-                        .Select(b => b.BranchId)
-                        .ToListAsync();
+                    var branches = assignedBranches.Select(b => new UserBranch
+                    {
+                        UserId = user.UserId,
+                        BranchId = b,
+                        IsActive = true
+                    });
 
-                    var newBranches = validBranches
-                        .Select(b => new UserBranch
-                        {
-                            UserId = user.UserId,
-                            BranchId = b,
-                            IsActive = true
-                        });
-
-                    if (newBranches.Any())
-                        await _db.UserBranches.AddRangeAsync(newBranches);
+                    await _db.UserBranches.AddRangeAsync(branches);
                 }
 
                 await _db.SaveChangesAsync();
@@ -144,7 +149,7 @@ namespace IdentityService.Services.Implementation
         }
 
         // ---------------- GET USERS ----------------
-        public async Task<ApiResponse<List<User>>> GetUsersAsync(PaginationRequest request, bool includeInactive)
+        public async Task<ApiResponse<List<UserResponse>>> GetUsersAsync(PaginationRequest request, bool includeInactive)
         {
             try
             {
@@ -152,39 +157,77 @@ namespace IdentityService.Services.Implementation
                 var currentUserId = _currentUser.UserId;
 
                 var currentUser = await _db.Users
+                    .AsNoTracking()
                     .Include(u => u.UserRole)
                     .Include(u => u.UserBranches)
-                    .FirstOrDefaultAsync(u => u.UserId == currentUserId);
+                    .FirstOrDefaultAsync(u => u.UserId == currentUserId && u.TenantId == tenantId);
 
                 if (currentUser == null)
-                    return ApiResponseFactory.Failure<List<User>>("Current user not found");
+                    return ApiResponseFactory.Failure<List<UserResponse>>("Current user not found");
 
-                IQueryable<User> query = _db.Users.AsNoTracking()
+                var roleName = currentUser.UserRole.RoleName;
+
+                IQueryable<User> query = _db.Users
+                    .Include(u => u.UserRole)
+                    .Include(u => u.UserBranches)
+                    .AsNoTracking()
                     .Where(u => u.TenantId == tenantId);
 
-                // Role-based filtering
-                if (currentUser.UserRole.RoleName.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+                // Admin filter
+                if (roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase))
                 {
-                    var adminBranchIds = currentUser.UserBranches.Select(ub => ub.BranchId).ToList();
-                    query = query.Where(u => u.UserBranches.Any(ub => adminBranchIds.Contains(ub.BranchId)));
+                    var adminBranchIds = currentUser.UserBranches
+                        .Select(ub => ub.BranchId)
+                        .ToList();
+
+                    query = query.Where(u =>
+                        u.UserBranches.Any(ub => adminBranchIds.Contains(ub.BranchId)));
                 }
-                else if (!currentUser.UserRole.RoleName.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase))
+
+                // User filter
+                else if (roleName.Equals("User", StringComparison.OrdinalIgnoreCase))
                 {
-                    var userBranchId = currentUser.UserBranches.FirstOrDefault()?.BranchId;
-                    query = query.Where(u => u.UserBranches.Any(ub => ub.BranchId == userBranchId));
+                    var userBranchId = currentUser.UserBranches
+                        .Select(ub => ub.BranchId)
+                        .FirstOrDefault();
+
+                    query = query.Where(u =>
+                        u.UserBranches.Any(ub => ub.BranchId == userBranchId));
                 }
 
                 if (!includeInactive)
                     query = query.Where(u => u.IsActive);
 
                 var pagedResult = await _repo.GetPagedAsync(query, request);
-                return ApiResponseFactory.PagedSuccess(pagedResult, "Users fetched success+fully");
+
+                // Entity → DTO
+                var users = pagedResult.Items.Select(u => new UserResponse
+                {
+                    Id = u.UserId,
+                    Email = u.Email,
+                    FullName = $"{u.FirstName} {u.LastName}",
+                    PhoneNumber = u.PhoneNumber,
+                    RoleId = u.RoleId,
+                    IsActive = u.IsActive,
+                    CreatedAt = u.CreatedAt,
+
+                    BranchIds = u.UserRole.RoleName == "SuperAdmin"
+                     ? _db.Branches
+                         .Where(b => b.TenantId == tenantId)
+                         .Select(b => b.BranchId)
+                         .ToList()
+                     : u.UserBranches.Select(b => b.BranchId).ToList()
+
+                }).ToList();
+
+                return ApiResponseFactory.Success(users, "Users fetched successfully");
             }
             catch
             {
-                return ApiResponseFactory.Failure<List<User>>("Database error occurred");
-            }   
+                return ApiResponseFactory.Failure<List<UserResponse>>("Database error occurred");
+            }
         }
+
 
         // ---------------- UPDATE USER ----------------
         public async Task<ApiResponse<string>> UpdateUserAsync(Guid userId, UserUpdateRequest dto)
@@ -241,7 +284,7 @@ namespace IdentityService.Services.Implementation
                 var removeBranches = existingBranches.Where(ub => !assignedBranches.Contains(ub.BranchId)).ToList();
                 _db.UserBranches.RemoveRange(removeBranches);
 
-                // Add only missing branches (validate against tenant branches)
+                // Add only missing branches  
                 if (assignedBranches.Any() && role.RoleName != "SuperAdmin")
                 {
                     var validBranches = await _db.Branches
@@ -319,7 +362,7 @@ namespace IdentityService.Services.Implementation
         {
             var user = await _db.Users.FindAsync(dto.UserId);
             if (user == null)
-                return ApiResponseFactory.Failure<string>("User not found");
+                return ApiResponseFactory.Failure<string>("User not found");   
 
             _db.UsersLogs.Add(new UsersLog { UserId = user.UserId, EventMessage = $"User {user.Email} logged out", EventTime = DateTime.UtcNow });
             await _db.SaveChangesAsync();

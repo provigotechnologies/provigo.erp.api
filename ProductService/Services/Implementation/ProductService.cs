@@ -4,6 +4,7 @@ using ProductService.Services.Interface;
 using ProviGo.Common.Data;
 using ProviGo.Common.Models;
 using ProviGo.Common.Pagination;
+using ProviGo.Common.Providers;
 using ProviGo.Common.Response;
 using ProviGo.Common.Services;
 
@@ -12,11 +13,13 @@ namespace ProductService.Services.Implementation
     public class ProductService(
         TenantDbContext db,
         IGenericRepository<Product> repo,
-        BranchAccessService branchAccess) : IProductService
+        BranchAccessService branchAccess,
+        TenantProvider tenantProvider) : IProductService
     {
         private readonly TenantDbContext _db = db;
         private readonly IGenericRepository<Product> _repo = repo;
         private readonly BranchAccessService _branchAccess = branchAccess;
+        private readonly TenantProvider _tenantProvider = tenantProvider;
 
 
         // CREATE PRODUCT
@@ -24,6 +27,7 @@ namespace ProductService.Services.Implementation
         {
             try
             {
+                var tenantId = _tenantProvider.TenantId;
                 var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
 
                 if (!allowedBranches.Contains(dto.BranchId))
@@ -40,6 +44,7 @@ namespace ProductService.Services.Implementation
 
                 var product = new Product
                 {
+                    TenantId = tenantId,
                     BranchId = dto.BranchId,
                     ProductName = dto.ProductName,
                     TotalFee = dto.TotalFee,
@@ -138,6 +143,7 @@ namespace ProductService.Services.Implementation
                 int affectedRows = await _db.Products
                     .Where(p => p.ProductId == productId)
                     .ExecuteUpdateAsync(s => s
+                        .SetProperty(c => c.BranchId, dto.BranchId)
                         .SetProperty(p => p.ProductName, dto.ProductName)
                         .SetProperty(p => p.TotalFee, dto.TotalFee)
                         .SetProperty(p => p.IsActive, dto.IsActive)
@@ -187,5 +193,7 @@ namespace ProductService.Services.Implementation
                     new List<string> { ex.Message });
             }
         }
+
+
     }
 }

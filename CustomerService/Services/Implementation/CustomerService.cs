@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using ProviGo.Common.Data;
 using ProviGo.Common.Models;
 using ProviGo.Common.Pagination;
+using ProviGo.Common.Providers;
 using ProviGo.Common.Response;
 using ProviGo.Common.Services;
 
@@ -12,17 +13,20 @@ namespace CustomerService.Services.Implementation
     public class CustomerService(
         TenantDbContext db,
         IGenericRepository<Customer> repo,
-        BranchAccessService branchAccess) : ICustomerService
+        BranchAccessService branchAccess,
+        TenantProvider tenantProvider) : ICustomerService
     {
         private readonly TenantDbContext _db = db;
         private readonly IGenericRepository<Customer> _repo = repo;
         private readonly BranchAccessService _branchAccess = branchAccess;
+        private readonly TenantProvider _tenantProvider = tenantProvider;
 
         // CREATE CUSTOMER
         public async Task<ApiResponse<CustomerResponseDto>> CreateCustomerAsync(CustomerCreateDto dto)
         {
             try
             {
+                var tenantId = _tenantProvider.TenantId;
                 var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
 
                 if (!allowedBranches.Contains(dto.BranchId))
@@ -40,6 +44,7 @@ namespace CustomerService.Services.Implementation
 
                 var customer = new Customer
                 {
+                    TenantId = tenantId,
                     BranchId = dto.BranchId,
                     CustomerName = dto.FullName,
                     Phone = dto.Phone,
@@ -67,9 +72,12 @@ namespace CustomerService.Services.Implementation
 
                 return ApiResponseFactory.Success(response, "Customer created successfully");
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return ApiResponseFactory.Failure<CustomerResponseDto>("Database error occurred");
+                return ApiResponseFactory.Failure<CustomerResponseDto>(
+                    "Database error occurred",
+                    new List<string> { ex.Message }
+                );
             }
         }
 
@@ -137,6 +145,7 @@ namespace CustomerService.Services.Implementation
                 int affectedRows = await _db.Customers
                     .Where(c => c.CustomerId == customerId)
                     .ExecuteUpdateAsync(s => s
+                        .SetProperty(c => c.BranchId, dto.BranchId)
                         .SetProperty(c => c.CustomerName, dto.FullName)
                         .SetProperty(c => c.Email, dto.Email)
                         .SetProperty(c => c.Phone, dto.Phone)

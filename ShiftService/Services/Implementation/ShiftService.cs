@@ -2,6 +2,7 @@
 using ProviGo.Common.Data;
 using ProviGo.Common.Models;
 using ProviGo.Common.Pagination;
+using ProviGo.Common.Providers;
 using ProviGo.Common.Response;
 using ProviGo.Common.Services;
 using ShiftService.DTOs;
@@ -12,11 +13,13 @@ namespace ShiftService.Services.Implementation
     public class ShiftService(
         TenantDbContext db,
         IGenericRepository<Shift> repo,
-        BranchAccessService branchAccess) : IShiftService
+        BranchAccessService branchAccess,
+      TenantProvider tenantProvider) : IShiftService
     {
         private readonly TenantDbContext _db = db;
         private readonly IGenericRepository<Shift> _repo = repo;
         private readonly BranchAccessService _branchAccess = branchAccess;
+        private readonly TenantProvider _tenantProvider = tenantProvider;
 
 
         // CREATE SHIFT
@@ -24,6 +27,7 @@ namespace ShiftService.Services.Implementation
         {
             try
             {
+                var tenantId = _tenantProvider.TenantId;
                 var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
 
                 if (!allowedBranches.Contains(dto.BranchId))
@@ -40,6 +44,7 @@ namespace ShiftService.Services.Implementation
 
                 var shift = new Shift
                 {
+                    TenantId = tenantId,
                     BranchId = dto.BranchId,
                     ShiftName = dto.ShiftName.Trim(),
                     IsActive = dto.IsActive
@@ -51,7 +56,6 @@ namespace ShiftService.Services.Implementation
                 var response = new ShiftResponseDto
                 {
                     ShiftId = shift.ShiftId,
-                    BranchId = shift.BranchId,
                     ShiftName = shift.ShiftName,
                     IsActive = shift.IsActive
                 };
@@ -132,6 +136,7 @@ namespace ShiftService.Services.Implementation
                 int affectedRows = await _db.Shifts
                     .Where(s => s.ShiftId == shiftId)
                     .ExecuteUpdateAsync(s => s
+                        .SetProperty(c => c.BranchId, dto.BranchId)
                         .SetProperty(i => i.ShiftName, dto.ShiftName.Trim())
                         .SetProperty(i => i.IsActive, dto.IsActive)
                     );

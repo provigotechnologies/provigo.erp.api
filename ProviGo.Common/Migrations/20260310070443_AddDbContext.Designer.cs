@@ -12,7 +12,7 @@ using ProviGo.Common.Data;
 namespace ProviGo.Common.Migrations
 {
     [DbContext(typeof(TenantDbContext))]
-    [Migration("20260309132151_AddDbContext")]
+    [Migration("20260310070443_AddDbContext")]
     partial class AddDbContext
     {
         /// <inheritdoc />
