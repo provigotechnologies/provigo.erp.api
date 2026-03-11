@@ -11,28 +11,41 @@ using ProviGo.Common.Services;
 namespace CustomerService.Services.Implementation
 {
     public class CustomerService(
-        TenantDbContext db,
-        IGenericRepository<Customer> repo,
-        BranchAccessService branchAccess,
-        TenantProvider tenantProvider) : ICustomerService
+    TenantDbContext db,
+    IGenericRepository<Customer> repo,
+    BranchAccessService branchAccess,
+    TenantProvider tenantProvider,
+    CurrentUserService currentUser) : ICustomerService
     {
         private readonly TenantDbContext _db = db;
         private readonly IGenericRepository<Customer> _repo = repo;
         private readonly BranchAccessService _branchAccess = branchAccess;
         private readonly TenantProvider _tenantProvider = tenantProvider;
+        private readonly CurrentUserService _currentUser = currentUser;
 
         // CREATE CUSTOMER
         public async Task<ApiResponse<CustomerResponseDto>> CreateCustomerAsync(CustomerCreateDto dto)
         {
             try
             {
-                var tenantId = _tenantProvider.TenantId;
+                _currentUser.EnsureWriteAccess();
+
+                // Branch exists check
+                var branchExists = await _db.Branches
+                    .AnyAsync(b => b.BranchId == dto.BranchId);
+
+                if (!branchExists)
+                    return ApiResponseFactory.Failure<CustomerResponseDto>(
+                        "Invalid branch selected");
+
+                // User branch access check
                 var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
 
                 if (!allowedBranches.Contains(dto.BranchId))
                     return ApiResponseFactory.Failure<CustomerResponseDto>(
                         "You don't have access to this branch");
 
+                // Email duplicate check
                 var emailExists = await _db.Customers
                     .AnyAsync(c =>
                         c.BranchId == dto.BranchId &&
@@ -44,7 +57,7 @@ namespace CustomerService.Services.Implementation
 
                 var customer = new Customer
                 {
-                    TenantId = tenantId,
+                    TenantId = _tenantProvider.TenantId,
                     BranchId = dto.BranchId,
                     CustomerName = dto.FullName,
                     Phone = dto.Phone,
@@ -61,6 +74,7 @@ namespace CustomerService.Services.Implementation
 
                 var response = new CustomerResponseDto
                 {
+                    BranchId = customer.BranchId,
                     CustomerId = customer.CustomerId,
                     FullName = customer.CustomerName,
                     Phone = customer.Phone,
@@ -76,11 +90,9 @@ namespace CustomerService.Services.Implementation
             {
                 return ApiResponseFactory.Failure<CustomerResponseDto>(
                     "Database error occurred",
-                    new List<string> { ex.Message }
-                );
+                    new List<string> { ex.Message });
             }
         }
-
 
         // GET CUSTOMERS
         public async Task<ApiResponse<List<Customer>>> GetCustomersAsync(
@@ -121,10 +133,12 @@ namespace CustomerService.Services.Implementation
         {
             try
             {
+                _currentUser.EnsureWriteAccess();
+                var tenantId = _currentUser.TenantId;
                 var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
 
                 var customer = await _db.Customers
-                    .FirstOrDefaultAsync(c => c.CustomerId == customerId);
+                    .FirstOrDefaultAsync(c => c.CustomerId == customerId && c.TenantId == tenantId);
 
                 if (customer == null)
                     return ApiResponseFactory.Failure<string>("Customer not found");
@@ -143,7 +157,7 @@ namespace CustomerService.Services.Implementation
                         "Customer email already exists");
 
                 int affectedRows = await _db.Customers
-                    .Where(c => c.CustomerId == customerId)
+                    .Where(c => c.CustomerId == customerId && c.TenantId == tenantId)
                     .ExecuteUpdateAsync(s => s
                         .SetProperty(c => c.BranchId, dto.BranchId)
                         .SetProperty(c => c.CustomerName, dto.FullName)
@@ -171,10 +185,12 @@ namespace CustomerService.Services.Implementation
         {
             try
             {
+                _currentUser.EnsureWriteAccess();
+
                 var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
 
                 var customer = await _db.Customers
-                    .FirstOrDefaultAsync(c => c.CustomerId == customerId);
+                    .FirstOrDefaultAsync(c => c.CustomerId == customerId && c.TenantId == _tenantProvider.TenantId);
 
                 if (customer == null)
                     return ApiResponseFactory.Failure<string>("Customer not found");

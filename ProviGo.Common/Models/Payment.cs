@@ -9,16 +9,10 @@ using System.Threading.Tasks;
 namespace ProviGo.Common.Models
 {
     [Table("Payments")]
-    public class Payment
+    public class Payment : BaseEntity
     {
         [Key]
         public int PaymentId { get; set; }
-
-        [Required]
-        public Guid TenantId { get; set; }
-
-        [Required]
-        public Guid BranchId { get; set; }
 
         public int OrderId { get; set; }
         public string Mode { get; set; }
@@ -27,8 +21,6 @@ namespace ProviGo.Common.Models
 
         public decimal PaidAmount { get; set; }
         public string Status { get; set; } // Pending / Success / Failed
-
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         //Navigation
         [ForeignKey(nameof(BranchId))]

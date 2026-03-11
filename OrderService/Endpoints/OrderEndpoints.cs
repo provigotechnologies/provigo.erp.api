@@ -14,10 +14,9 @@ namespace OrderService.Endpoints
             app.MapGet("/api/orders/{id:int}", async (
                 int id,
                 Guid branchId,
-                TenantProvider provider,
                 IOrderService orderService) =>
             {
-                var response = await orderService.GetOrderByIdAsync(id, branchId, provider.TenantId);
+                var response = await orderService.GetOrderByIdAsync(id, branchId);
                 return response != null ? Results.Ok(response) : Results.NotFound();
             });
 
@@ -26,21 +25,18 @@ namespace OrderService.Endpoints
                 [AsParameters] PaginationRequest request,
                 bool includeInactive,
                 Guid branchId,
-                TenantProvider provider,
                 IOrderService orderService) =>
             {
-                var response = await orderService.GetOrdersAsync(request, includeInactive, branchId, provider.TenantId);
+                var response = await orderService.GetOrdersAsync(request, includeInactive, branchId);
                 return Results.Ok(response);
             });
 
             // 🔹 Create Order
             app.MapPost("/api/orders", async (
                 OrderCreateDto dto,
-                Guid branchId,
-                TenantProvider provider,
                 IOrderService orderService) =>
             {
-                var response = await orderService.CreateOrderAsync(dto, branchId, provider.TenantId);
+                var response = await orderService.CreateOrderAsync(dto);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -51,10 +47,9 @@ namespace OrderService.Endpoints
                 int id,
                 OrderUpdateDto dto,
                 Guid branchId,
-                TenantProvider provider,
                 IOrderService orderService) =>
             {
-                var response = await orderService.UpdateOrderAsync(id, dto, branchId, provider.TenantId);
+                var response = await orderService.UpdateOrderAsync(id, dto, branchId);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -64,10 +59,9 @@ namespace OrderService.Endpoints
             app.MapDelete("/api/orders/{id:int}", async (
                 int id,
                 Guid branchId,
-                TenantProvider provider,
                 IOrderService orderService) =>
             {
-                var response = await orderService.RemoveOrderAsync(id, branchId, provider.TenantId);
+                var response = await orderService.RemoveOrderAsync(id, branchId);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -78,10 +72,9 @@ namespace OrderService.Endpoints
             int orderId,
             OrderPaymentUpdateDto dto,
             Guid branchId,
-            TenantProvider provider,
             IOrderService orderService) =>
             {
-                var response = await orderService.UpdatePaymentAsync(orderId, dto.PaidAmount, branchId, provider.TenantId);
+                var response = await orderService.UpdatePaymentAsync(orderId, dto.PaidAmount, branchId);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -92,10 +85,9 @@ namespace OrderService.Endpoints
             int orderId,
             OrderRefundUpdateDto dto,
             Guid branchId,
-            TenantProvider provider,
             IOrderService orderService) =>
             {
-                var response = await orderService.UpdateRefundAsync(orderId, dto.RefundAmount, branchId, provider.TenantId);
+                var response = await orderService.UpdateRefundAsync(orderId, dto.RefundAmount, branchId);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);

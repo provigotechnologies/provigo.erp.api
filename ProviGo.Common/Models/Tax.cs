@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace ProviGo.Common.Models
 {
     [Table("Taxes")]
-    public class Tax
+    public class Tax 
     {
         [Key]
         public int TaxId { get; set; }
@@ -23,7 +23,6 @@ namespace ProviGo.Common.Models
         [Column(TypeName = "decimal(5,2)")]
         public decimal Rate { get; set; }
         public bool IsActive { get; set; }
-
 
         [ForeignKey(nameof(TenantId))]
         public TenantDetails TenantDetails { get; set; }

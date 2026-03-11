@@ -9,13 +9,10 @@ using System.Threading.Tasks;
 namespace ProviGo.Common.Models
 {
     [Table("Charges")]
-    public class Charge
+    public class Charge : BaseEntity
     {
         [Key]
         public int ChargeId { get; set; }
-
-        [Required]
-        public Guid TenantId { get; set; }
 
         [Required, MaxLength(100)]
         public string Name { get; set; } // Service Fee, Packing
@@ -24,11 +21,12 @@ namespace ProviGo.Common.Models
         public string ChargeType { get; set; } // Flat / Percentage
 
         public decimal Value { get; set; }
-        public bool IsActive { get; set; }
-
 
         [ForeignKey(nameof(TenantId))]
         public TenantDetails TenantDetails { get; set; }
+
+        [ForeignKey(nameof(BranchId))]
+        public Branch Branch { get; set; }
 
         public ICollection<OrderCharge> OrderCharges { get; set; }
     }

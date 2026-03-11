@@ -1,43 +1,49 @@
-﻿using ProviGo.Common.Data;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using ProviGo.Common.Data;
+using ProviGo.Common.Exceptions;
 using ProviGo.Common.Models;
 using ProviGo.Common.Pagination;
+using ProviGo.Common.Providers;
 using ProviGo.Common.Response;
+using ProviGo.Common.Services;
 using TenantService.DTOs;
 using TenantService.Services.Interface;
-using ProviGo.Common.Exceptions;
 
 namespace TenantService.Services.Implementation
 {
     public class BranchService(
-     TenantDbContext db,
-     IGenericRepository<Branch> repo) : IBranchService
+    TenantDbContext db,
+    IGenericRepository<Branch> repo,
+    TenantProvider tenantProvider,
+    CurrentUserService currentUser) : IBranchService
     {
         private readonly TenantDbContext _db = db;
         private readonly IGenericRepository<Branch> _repo = repo;
+        private readonly TenantProvider _tenantProvider = tenantProvider;
+        private readonly CurrentUserService _currentUser = currentUser;
 
-        public async Task<ApiResponse<BranchResponseDto>> CreateBranchAsync(BranchCreateDto dto, Guid tenantId)
+        public async Task<ApiResponse<BranchResponseDto>> CreateBranchAsync(BranchCreateDto dto)
         {
             try
             {
+                _currentUser.EnsureWriteAccess();
+
                 // 🔒 Duplicate Name check
                 var exists = await _db.Branches
-                    .AnyAsync(b => b.TenantId == tenantId && b.BranchName == dto.BranchName);
+                    .AnyAsync(b => b.BranchName == dto.BranchName);
 
                 if (exists)
                     return ApiResponseFactory.Failure<BranchResponseDto>("Branch name already exists for this tenant");
 
                 var branch = new Branch
                 {
-                    TenantId = tenantId,
+                    TenantId = _tenantProvider.TenantId,
                     BranchName = dto.BranchName,
                     BranchCode = dto.BranchCode,
                     GSTIN = dto.GSTIN,
+                    CountryId = dto.CountryId,
+                    StateId = dto.StateId,
                     Address = dto.Address,
-                    State = dto.State,
-                    StateCode = dto.StateCode,
-                    Country = dto.Country,
-                    CountryCode = dto.CountryCode,
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
@@ -56,14 +62,10 @@ namespace TenantService.Services.Implementation
                     BranchName = branch.BranchName,
                     BranchCode = branch.BranchCode,
                     GSTIN = branch.GSTIN,
-                    State = branch.State,
-                    StateCode = branch.StateCode,
-                    Country = branch.Country,
-                    CountryCode = branch.CountryCode,
+                    CountryId = branch.CountryId,
+                    StateId = branch.StateId,
                     Address = branch.Address,
-                    IsActive = branch.IsActive,
-                    CreatedAt = branch.CreatedAt,
-                    UpdatedAt = branch.UpdatedAt
+                    IsActive = branch.IsActive
                 };
 
                 return ApiResponseFactory.Success(
@@ -80,10 +82,13 @@ namespace TenantService.Services.Implementation
         }
 
 
-        public async Task<ApiResponse<BranchResponseDto>> GetBranchByIdAsync(Guid branchId, Guid tenantId)
+        public async Task<ApiResponse<BranchResponseDto>> GetBranchByIdAsync(Guid branchId)
         {
-            var branch = await _db.Branches.AsNoTracking()
-                .FirstOrDefaultAsync(b => b.BranchId == branchId && b.TenantId == tenantId);
+            var branch = await _db.Branches
+                .Include(b => b.Country)
+                .Include(b => b.State)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(b => b.BranchId == branchId);
 
             if (branch == null)
                 return ApiResponseFactory.Failure<BranchResponseDto>("Branch not found for this tenant");
@@ -96,10 +101,6 @@ namespace TenantService.Services.Implementation
                 BranchCode = branch.BranchCode,
                 GSTIN = branch.GSTIN,
                 Address = branch.Address,
-                State = branch.State,
-                StateCode = branch.StateCode,
-                Country = branch.Country,
-                CountryCode = branch.CountryCode,
                 IsActive = branch.IsActive,
                 CreatedAt = branch.CreatedAt,
                 UpdatedAt = branch.UpdatedAt
@@ -109,12 +110,13 @@ namespace TenantService.Services.Implementation
 
         public async Task<ApiResponse<List<Branch>>> GetBranchesAsync(
            PaginationRequest request,
-           bool includeInactive, Guid tenantId)
+           bool includeInactive)
         {
             try
             {
                 var query = _db.Branches
-                    .Where(b => b.TenantId == tenantId)
+                    .Include(b => b.Country)
+                    .Include(b => b.State)
                     .AsNoTracking();
 
                 // Apply filter
@@ -139,24 +141,23 @@ namespace TenantService.Services.Implementation
         }
 
 
-        public async Task<ApiResponse<string>> UpdateBranchAsync(Guid branchId, BranchUpdateDto dto, Guid tenantId)
+        public async Task<ApiResponse<string>> UpdateBranchAsync(Guid branchId, BranchUpdateDto dto)
         {
             try
             {
+                _currentUser.EnsureWriteAccess();
 
                 int affectedRows = await _db.Branches
-                    .Where(b => b.BranchId == branchId && b.TenantId == tenantId)
+                    .Where(b => b.BranchId == branchId && b.TenantId == _tenantProvider.TenantId)
                     .ExecuteUpdateAsync(s => s
                         .SetProperty(b => b.BranchName, dto.BranchName)
                         .SetProperty(b => b.BranchCode, dto.BranchCode)
                         .SetProperty(b => b.GSTIN, dto.GSTIN)
+                        .SetProperty(b => b.CountryId, dto.CountryId)
+                        .SetProperty(b => b.StateId, dto.StateId)
                         .SetProperty(b => b.Address, dto.Address)
                         .SetProperty(b => b.IsActive, dto.IsActive)
-                        .SetProperty(b => b.State, dto.State)
-                        .SetProperty(b => b.StateCode, dto.StateCode)
-                        .SetProperty(b => b.Country, dto.Country)
-                        .SetProperty(b => b.CountryCode, dto.CountryCode)
-                        .SetProperty(b => b.UpdatedAt, DateTime.UtcNow) // 🔹 update timestamp
+                        .SetProperty(b => b.UpdatedAt, DateTime.UtcNow)
                     );
 
                 if (affectedRows == 0)
@@ -173,13 +174,15 @@ namespace TenantService.Services.Implementation
         }
 
 
-        public async Task<ApiResponse<string>> RemoveBranchAsync(Guid branchId, Guid tenantId)
+        public async Task<ApiResponse<string>> RemoveBranchAsync(Guid branchId)
         {
             try
             {
+                _currentUser.EnsureWriteAccess();
+
                 var branch = await _db.Branches
-                    .FirstOrDefaultAsync(b => b.BranchId == branchId &&
-                                              b.TenantId == tenantId);
+                    .FirstOrDefaultAsync(b => b.BranchId == branchId && b.TenantId == _tenantProvider.TenantId);
+
                 if (branch == null)
                 {
                     return ApiResponseFactory.Failure<string>("Branch not found");

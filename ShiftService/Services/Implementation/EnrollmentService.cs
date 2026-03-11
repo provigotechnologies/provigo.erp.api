@@ -11,15 +11,17 @@ using ShiftService.Services.Interface;
 namespace ShiftService.Services.Implementation
 {
     public class EnrollmentService(
-        TenantDbContext db,
-        TenantProvider tenantProvider,
-        BranchAccessService branchAccess,
-        IGenericRepository<CustomerProductEnrollment> repo) : IEnrollmentService
+     TenantDbContext db,
+     IGenericRepository<CustomerProductEnrollment> repo,
+     BranchAccessService branchAccess,
+     TenantProvider tenantProvider,
+     CurrentUserService currentUser) : IEnrollmentService
     {
         private readonly TenantDbContext _db = db;
-        private readonly TenantProvider _tenantProvider = tenantProvider;
-        private readonly BranchAccessService _branchAccess = branchAccess;
         private readonly IGenericRepository<CustomerProductEnrollment> _repo = repo;
+        private readonly BranchAccessService _branchAccess = branchAccess;
+        private readonly TenantProvider _tenantProvider = tenantProvider;
+        private readonly CurrentUserService _currentUser = currentUser;
 
         // ENROLL STUDENT
 
@@ -30,6 +32,8 @@ namespace ShiftService.Services.Implementation
         {
             try
             {
+                _currentUser.EnsureWriteAccess();
+
                 var tenantId = _tenantProvider.TenantId;
 
                 var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
@@ -134,6 +138,8 @@ namespace ShiftService.Services.Implementation
         {
             try
             {
+                _currentUser.EnsureWriteAccess();
+
                 var tenantId = _tenantProvider.TenantId;
 
                 var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();

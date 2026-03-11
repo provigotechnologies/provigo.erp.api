@@ -12,7 +12,7 @@ using ProviGo.Common.Data;
 namespace ProviGo.Common.Migrations
 {
     [DbContext(typeof(TenantDbContext))]
-    [Migration("20260310070443_AddDbContext")]
+    [Migration("20260311163634_AddDbContext")]
     partial class AddDbContext
     {
         /// <inheritdoc />
@@ -36,6 +36,12 @@ namespace ProviGo.Common.Migrations
                     b.Property<DateTime>("AttendanceDate")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<int>("CustomerId")
                         .HasColumnType("int");
 
@@ -51,7 +57,12 @@ namespace ProviGo.Common.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("char(36)");
 
+                    b.Property<DateTime?>("UpdatedOn")
+                        .HasColumnType("datetime(6)");
+
                     b.HasKey("AttendanceId");
+
+                    b.HasIndex("BranchId");
 
                     b.HasIndex("CustomerId");
 
@@ -69,7 +80,6 @@ namespace ProviGo.Common.Migrations
                         .HasColumnType("char(36)");
 
                     b.Property<string>("Address")
-                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("BranchCode")
@@ -82,18 +92,17 @@ namespace ProviGo.Common.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("varchar(150)");
 
-                    b.Property<string>("Country")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                    b.Property<string>("City")
+                        .HasColumnType("longtext");
 
-                    b.Property<string>("CountryCode")
-                        .IsRequired()
-                        .HasMaxLength(5)
-                        .HasColumnType("varchar(5)");
+                    b.Property<int>("CountryId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("longtext");
 
                     b.Property<string>("GSTIN")
                         .IsRequired()
@@ -103,15 +112,14 @@ namespace ProviGo.Common.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)");
 
-                    b.Property<string>("State")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                    b.Property<string>("Phone")
+                        .HasColumnType("longtext");
 
-                    b.Property<string>("StateCode")
-                        .IsRequired()
-                        .HasMaxLength(5)
-                        .HasColumnType("varchar(5)");
+                    b.Property<string>("Pincode")
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("StateId")
+                        .HasColumnType("int");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("char(36)");
@@ -120,6 +128,10 @@ namespace ProviGo.Common.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.HasKey("BranchId");
+
+                    b.HasIndex("CountryId");
+
+                    b.HasIndex("StateId");
 
                     b.HasIndex("TenantId");
 
@@ -134,10 +146,16 @@ namespace ProviGo.Common.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ChargeId"));
 
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("char(36)");
+
                     b.Property<string>("ChargeType")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)");
@@ -150,11 +168,16 @@ namespace ProviGo.Common.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("char(36)");
 
+                    b.Property<DateTime?>("UpdatedOn")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<decimal>("Value")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("ChargeId");
+
+                    b.HasIndex("BranchId");
 
                     b.HasIndex("TenantId");
 
@@ -200,6 +223,9 @@ namespace ProviGo.Common.Migrations
                     b.Property<Guid>("BranchId")
                         .HasColumnType("char(36)");
 
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<string>("CustomerName")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -234,6 +260,9 @@ namespace ProviGo.Common.Migrations
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("char(36)");
+
+                    b.Property<DateTime?>("UpdatedOn")
+                        .HasColumnType("datetime(6)");
 
                     b.HasKey("CustomerId");
 
@@ -282,6 +311,12 @@ namespace ProviGo.Common.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("DiscountId"));
 
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)");
 
@@ -298,11 +333,16 @@ namespace ProviGo.Common.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)");
 
+                    b.Property<DateTime?>("UpdatedOn")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<decimal>("Value")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("DiscountId");
+
+                    b.HasIndex("BranchId");
 
                     b.HasIndex("TenantId");
 
@@ -547,7 +587,7 @@ namespace ProviGo.Common.Migrations
                     b.Property<Guid>("BranchId")
                         .HasColumnType("char(36)");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime>("CreatedOn")
                         .HasColumnType("datetime(6)");
 
                     b.Property<int>("CustomerId")
@@ -560,6 +600,9 @@ namespace ProviGo.Common.Migrations
                     b.Property<decimal>("GrandTotal")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("datetime(6)");
@@ -583,6 +626,9 @@ namespace ProviGo.Common.Migrations
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("char(36)");
+
+                    b.Property<DateTime?>("UpdatedOn")
+                        .HasColumnType("datetime(6)");
 
                     b.HasKey("OrderId");
 
@@ -722,8 +768,11 @@ namespace ProviGo.Common.Migrations
                     b.Property<Guid>("BranchId")
                         .HasColumnType("char(36)");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime>("CreatedOn")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("Mode")
                         .IsRequired()
@@ -746,6 +795,9 @@ namespace ProviGo.Common.Migrations
                     b.Property<decimal>("TotalAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedOn")
+                        .HasColumnType("datetime(6)");
 
                     b.HasKey("PaymentId");
 
@@ -884,6 +936,9 @@ namespace ProviGo.Common.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(10,2)");
 
+                    b.Property<DateTime?>("UpdatedOn")
+                        .HasColumnType("datetime(6)");
+
                     b.HasKey("ProductId");
 
                     b.HasIndex("BranchId");
@@ -929,7 +984,11 @@ namespace ProviGo.Common.Migrations
 
                     b.HasKey("OfferingId");
 
+                    b.HasIndex("BranchId");
+
                     b.HasIndex("ShiftId");
+
+                    b.HasIndex("TenantId");
 
                     b.HasIndex("TrainerCourseId");
 
@@ -947,11 +1006,14 @@ namespace ProviGo.Common.Migrations
                     b.Property<Guid>("BranchId")
                         .HasColumnType("char(36)");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime>("CreatedOn")
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("GatewayRefundId")
                         .HasColumnType("longtext");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("Mode")
                         .IsRequired()
@@ -978,7 +1040,12 @@ namespace ProviGo.Common.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("char(36)");
 
+                    b.Property<DateTime?>("UpdatedOn")
+                        .HasColumnType("datetime(6)");
+
                     b.HasKey("RefundId");
+
+                    b.HasIndex("BranchId");
 
                     b.HasIndex("PaymentId");
 
@@ -998,6 +1065,9 @@ namespace ProviGo.Common.Migrations
                     b.Property<Guid>("BranchId")
                         .HasColumnType("char(36)");
 
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)");
 
@@ -1008,6 +1078,9 @@ namespace ProviGo.Common.Migrations
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("char(36)");
+
+                    b.Property<DateTime?>("UpdatedOn")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<Guid?>("UserId")
                         .HasColumnType("char(36)");
@@ -1188,7 +1261,11 @@ namespace ProviGo.Common.Migrations
 
                     b.HasKey("TrainerProductId");
 
+                    b.HasIndex("BranchId");
+
                     b.HasIndex("ProductId");
+
+                    b.HasIndex("TenantId");
 
                     b.HasIndex("TrainerId");
 
@@ -1201,7 +1278,7 @@ namespace ProviGo.Common.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime>("CreatedOn")
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("Email")
@@ -1221,9 +1298,6 @@ namespace ProviGo.Common.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
-                    b.Property<DateTime>("LastUpdatedAt")
-                        .HasColumnType("datetime(6)");
-
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("longtext");
@@ -1237,7 +1311,11 @@ namespace ProviGo.Common.Migrations
                         .HasColumnType("int");
 
                     b.Property<Guid>("TenantId")
-                        .HasColumnType("char(36)");
+                        .HasMaxLength(100)
+                        .HasColumnType("char(100)");
+
+                    b.Property<DateTime?>("UpdatedOn")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("UserCategory")
                         .IsRequired()
@@ -1272,7 +1350,8 @@ namespace ProviGo.Common.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "BranchId")
+                        .IsUnique();
 
                     b.ToTable("UserBranches");
                 });
@@ -1339,6 +1418,12 @@ namespace ProviGo.Common.Migrations
 
             modelBuilder.Entity("ProviGo.Common.Models.AttendanceRecord", b =>
                 {
+                    b.HasOne("ProviGo.Common.Models.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("ProviGo.Common.Models.Customer", "Customer")
                         .WithMany()
                         .HasForeignKey("CustomerId")
@@ -1357,6 +1442,8 @@ namespace ProviGo.Common.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Branch");
+
                     b.Navigation("Customer");
 
                     b.Navigation("Shift");
@@ -1366,22 +1453,46 @@ namespace ProviGo.Common.Migrations
 
             modelBuilder.Entity("ProviGo.Common.Models.Branch", b =>
                 {
+                    b.HasOne("ProviGo.Common.Models.Country", "Country")
+                        .WithMany()
+                        .HasForeignKey("CountryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ProviGo.Common.Models.State", "State")
+                        .WithMany()
+                        .HasForeignKey("StateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("ProviGo.Common.Models.TenantDetails", "TenantDetails")
                         .WithMany()
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Country");
+
+                    b.Navigation("State");
 
                     b.Navigation("TenantDetails");
                 });
 
             modelBuilder.Entity("ProviGo.Common.Models.Charge", b =>
                 {
+                    b.HasOne("ProviGo.Common.Models.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("ProviGo.Common.Models.TenantDetails", "TenantDetails")
                         .WithMany()
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Branch");
 
                     b.Navigation("TenantDetails");
                 });
@@ -1426,11 +1537,19 @@ namespace ProviGo.Common.Migrations
 
             modelBuilder.Entity("ProviGo.Common.Models.Discount", b =>
                 {
+                    b.HasOne("ProviGo.Common.Models.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("ProviGo.Common.Models.TenantDetails", "TenantDetails")
                         .WithMany()
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Branch");
 
                     b.Navigation("TenantDetails");
                 });
@@ -1658,9 +1777,21 @@ namespace ProviGo.Common.Migrations
 
             modelBuilder.Entity("ProviGo.Common.Models.ProductOffering", b =>
                 {
+                    b.HasOne("ProviGo.Common.Models.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("ProviGo.Common.Models.Shift", "Shift")
                         .WithMany()
                         .HasForeignKey("ShiftId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ProviGo.Common.Models.TenantDetails", "TenantDetails")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1670,13 +1801,23 @@ namespace ProviGo.Common.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Branch");
+
                     b.Navigation("Shift");
+
+                    b.Navigation("TenantDetails");
 
                     b.Navigation("TrainerCourse");
                 });
 
             modelBuilder.Entity("ProviGo.Common.Models.Refund", b =>
                 {
+                    b.HasOne("ProviGo.Common.Models.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("ProviGo.Common.Models.Payment", "Payment")
                         .WithMany("Refunds")
                         .HasForeignKey("PaymentId")
@@ -1688,6 +1829,8 @@ namespace ProviGo.Common.Migrations
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Branch");
 
                     b.Navigation("Payment");
 
@@ -1760,9 +1903,21 @@ namespace ProviGo.Common.Migrations
 
             modelBuilder.Entity("ProviGo.Common.Models.TrainerProduct", b =>
                 {
+                    b.HasOne("ProviGo.Common.Models.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("ProviGo.Common.Models.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ProviGo.Common.Models.TenantDetails", "TenantDetails")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1772,7 +1927,11 @@ namespace ProviGo.Common.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Branch");
+
                     b.Navigation("Product");
+
+                    b.Navigation("TenantDetails");
 
                     b.Navigation("Trainer");
                 });

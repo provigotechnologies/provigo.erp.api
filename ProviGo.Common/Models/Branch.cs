@@ -16,6 +16,8 @@ namespace ProviGo.Common.Models
 
         [Required]
         public Guid TenantId { get; set; }
+        public int CountryId { get; set; }
+        public int StateId { get; set; }
 
         [Required]
         [MaxLength(150)]
@@ -23,23 +25,14 @@ namespace ProviGo.Common.Models
 
         [MaxLength(10)]
         public string BranchCode { get; set; } = "";
+        public string? Phone { get; set; }
+        public string? Email { get; set; }
+        public string? City { get; set; }
+        public string? Pincode { get; set; }
+        public string? Address { get; set; }
 
         [MaxLength(15)]
         public string GSTIN { get; set; } = string.Empty;
-
-        [MaxLength(100)]
-        public string State { get; set; } = string.Empty;
-
-        [MaxLength(5)]
-        public string StateCode { get; set; } = string.Empty;
-
-        [MaxLength(100)]
-        public string Country { get; set; } = string.Empty;
-
-        [MaxLength(5)]
-        public string CountryCode { get; set; } = string.Empty;
-
-        public string Address { get; set; }
 
         public bool IsActive { get; set; } = true;
 
@@ -49,6 +42,12 @@ namespace ProviGo.Common.Models
 
         [ForeignKey(nameof(TenantId))]
         public TenantDetails TenantDetails { get; set; }
+
+        [ForeignKey(nameof(CountryId))]
+        public Country Country { get; set; }
+
+        [ForeignKey(nameof(StateId))]
+        public State State { get; set; }
 
     }
 }

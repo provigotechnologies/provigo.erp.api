@@ -9,11 +9,9 @@ using System.Threading.Tasks;
 namespace ProviGo.Common.Models
 {
     [Table("Products")]
-    public class Product
+    public class Product : BaseEntity
     {
         public int ProductId { get; set; }
-        public Guid TenantId { get; set; }
-        public Guid BranchId { get; set; }
 
         public string ProductName { get; set; } = string.Empty;
 
@@ -26,9 +24,6 @@ namespace ProviGo.Common.Models
         public int? TaxId { get; set; }
         public int? DiscountId { get; set; }
         public bool IsTaxInclusive { get; set; }
-        public bool IsActive { get; set; }
-        public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
-
 
         [ForeignKey(nameof(TenantId))]
         public TenantDetails TenantDetails { get; set; }

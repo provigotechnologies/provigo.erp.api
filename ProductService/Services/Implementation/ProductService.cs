@@ -11,15 +11,17 @@ using ProviGo.Common.Services;
 namespace ProductService.Services.Implementation
 {
     public class ProductService(
-        TenantDbContext db,
-        IGenericRepository<Product> repo,
-        BranchAccessService branchAccess,
-        TenantProvider tenantProvider) : IProductService
+     TenantDbContext db,
+     IGenericRepository<Product> repo,
+     BranchAccessService branchAccess,
+     TenantProvider tenantProvider,
+     CurrentUserService currentUser) : IProductService
     {
         private readonly TenantDbContext _db = db;
         private readonly IGenericRepository<Product> _repo = repo;
         private readonly BranchAccessService _branchAccess = branchAccess;
         private readonly TenantProvider _tenantProvider = tenantProvider;
+        private readonly CurrentUserService _currentUser = currentUser;
 
 
         // CREATE PRODUCT
@@ -27,7 +29,16 @@ namespace ProductService.Services.Implementation
         {
             try
             {
-                var tenantId = _tenantProvider.TenantId;
+                _currentUser.EnsureWriteAccess();
+
+                // Branch exists check
+                var branchExists = await _db.Branches
+                    .AnyAsync(b => b.BranchId == dto.BranchId);
+
+                if (!branchExists)
+                    return ApiResponseFactory.Failure<ProductResponseDto>(
+                        "Invalid branch selected");
+
                 var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
 
                 if (!allowedBranches.Contains(dto.BranchId))
@@ -44,7 +55,7 @@ namespace ProductService.Services.Implementation
 
                 var product = new Product
                 {
-                    TenantId = tenantId,
+                    TenantId = _tenantProvider.TenantId,
                     BranchId = dto.BranchId,
                     ProductName = dto.ProductName,
                     TotalFee = dto.TotalFee,
@@ -68,10 +79,11 @@ namespace ProductService.Services.Implementation
                     response,
                     "Product created successfully");
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 return ApiResponseFactory.Failure<ProductResponseDto>(
-                    "Database error occurred");
+                    "Database error occurred",
+                    new List<string> { ex.Message });
             }
         }
 
@@ -115,11 +127,13 @@ namespace ProductService.Services.Implementation
         {
             try
             {
+                _currentUser.EnsureWriteAccess();
+                var tenantId = _currentUser.TenantId;
                 var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
 
                 // 1️⃣ Get product first
                 var product = await _db.Products
-                    .FirstOrDefaultAsync(p => p.ProductId == productId);
+                    .FirstOrDefaultAsync(p => p.ProductId == productId && p.TenantId == tenantId);
 
                 if (product == null)
                     return ApiResponseFactory.Failure<string>("Product not found");
@@ -141,7 +155,7 @@ namespace ProductService.Services.Implementation
 
                 // 4️⃣ Update
                 int affectedRows = await _db.Products
-                    .Where(p => p.ProductId == productId)
+                    .Where(p => p.ProductId == productId && p.TenantId == tenantId)
                     .ExecuteUpdateAsync(s => s
                         .SetProperty(c => c.BranchId, dto.BranchId)
                         .SetProperty(p => p.ProductName, dto.ProductName)
@@ -168,10 +182,12 @@ namespace ProductService.Services.Implementation
         {
             try
             {
+                _currentUser.EnsureWriteAccess();
+
                 var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
 
                 var product = await _db.Products
-                    .FirstOrDefaultAsync(p => p.ProductId == productId);
+                    .FirstOrDefaultAsync(p => p.ProductId == productId && p.TenantId == _tenantProvider.TenantId);
 
                 if (product == null)
                     return ApiResponseFactory.Failure<string>("Product not found");

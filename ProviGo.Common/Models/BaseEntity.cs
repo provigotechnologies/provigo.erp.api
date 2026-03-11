@@ -10,6 +10,11 @@ namespace ProviGo.Common.Models
     {
         public Guid TenantId { get; set; }
         public Guid BranchId { get; set; }
+
+        public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
+        public DateTime? UpdatedOn { get; set; }
+
         public bool IsActive { get; set; }
+
     }
 }

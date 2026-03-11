@@ -119,96 +119,6 @@ namespace ProviGo.Common.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "Branches",
-                columns: table => new
-                {
-                    BranchId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    TenantId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    BranchName = table.Column<string>(type: "varchar(150)", maxLength: 150, nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    BranchCode = table.Column<string>(type: "varchar(10)", maxLength: 10, nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    GSTIN = table.Column<string>(type: "varchar(15)", maxLength: 15, nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    State = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    StateCode = table.Column<string>(type: "varchar(5)", maxLength: 5, nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    Country = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    CountryCode = table.Column<string>(type: "varchar(5)", maxLength: 5, nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    Address = table.Column<string>(type: "longtext", nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Branches", x => x.BranchId);
-                    table.ForeignKey(
-                        name: "FK_Branches_TenantDetails_TenantId",
-                        column: x => x.TenantId,
-                        principalTable: "TenantDetails",
-                        principalColumn: "TenantId",
-                        onDelete: ReferentialAction.Cascade);
-                })
-                .Annotation("MySql:CharSet", "utf8mb4");
-
-            migrationBuilder.CreateTable(
-                name: "Charges",
-                columns: table => new
-                {
-                    ChargeId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    TenantId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    Name = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    ChargeType = table.Column<string>(type: "varchar(20)", maxLength: 20, nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    Value = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
-                    IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Charges", x => x.ChargeId);
-                    table.ForeignKey(
-                        name: "FK_Charges_TenantDetails_TenantId",
-                        column: x => x.TenantId,
-                        principalTable: "TenantDetails",
-                        principalColumn: "TenantId",
-                        onDelete: ReferentialAction.Cascade);
-                })
-                .Annotation("MySql:CharSet", "utf8mb4");
-
-            migrationBuilder.CreateTable(
-                name: "Discounts",
-                columns: table => new
-                {
-                    DiscountId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    TenantId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    Name = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    Type = table.Column<string>(type: "varchar(20)", maxLength: 20, nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    Value = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
-                    IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Discounts", x => x.DiscountId);
-                    table.ForeignKey(
-                        name: "FK_Discounts_TenantDetails_TenantId",
-                        column: x => x.TenantId,
-                        principalTable: "TenantDetails",
-                        principalColumn: "TenantId",
-                        onDelete: ReferentialAction.Cascade);
-                })
-                .Annotation("MySql:CharSet", "utf8mb4");
-
-            migrationBuilder.CreateTable(
                 name: "Licenses",
                 columns: table => new
                 {
@@ -292,7 +202,7 @@ namespace ProviGo.Common.Migrations
                 columns: table => new
                 {
                     UserId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    TenantId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    TenantId = table.Column<Guid>(type: "char(100)", maxLength: 100, nullable: false, collation: "ascii_general_ci"),
                     Email = table.Column<string>(type: "varchar(255)", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     FirstName = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
@@ -307,8 +217,8 @@ namespace ProviGo.Common.Migrations
                     UserCategory = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    LastUpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false)
+                    CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    UpdatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -329,126 +239,54 @@ namespace ProviGo.Common.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "Customers",
+                name: "Branches",
                 columns: table => new
                 {
-                    CustomerId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    TenantId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     BranchId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    CustomerName = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
+                    TenantId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    CountryId = table.Column<int>(type: "int", nullable: false),
+                    StateId = table.Column<int>(type: "int", nullable: false),
+                    BranchName = table.Column<string>(type: "varchar(150)", maxLength: 150, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Phone = table.Column<string>(type: "varchar(10)", maxLength: 10, nullable: false)
+                    BranchCode = table.Column<string>(type: "varchar(10)", maxLength: 10, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Email = table.Column<string>(type: "varchar(250)", maxLength: 250, nullable: false)
+                    Phone = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    State = table.Column<string>(type: "longtext", nullable: false)
+                    Email = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Address = table.Column<string>(type: "varchar(500)", maxLength: 500, nullable: false)
+                    City = table.Column<string>(type: "longtext", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Pincode = table.Column<string>(type: "longtext", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Address = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     GSTIN = table.Column<string>(type: "varchar(15)", maxLength: 15, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    JoinDate = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false, defaultValue: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Customers", x => x.CustomerId);
-                    table.ForeignKey(
-                        name: "FK_Customers_Branches_BranchId",
-                        column: x => x.BranchId,
-                        principalTable: "Branches",
-                        principalColumn: "BranchId",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Customers_TenantDetails_TenantId",
-                        column: x => x.TenantId,
-                        principalTable: "TenantDetails",
-                        principalColumn: "TenantId",
-                        onDelete: ReferentialAction.Cascade);
-                })
-                .Annotation("MySql:CharSet", "utf8mb4");
-
-            migrationBuilder.CreateTable(
-                name: "Products",
-                columns: table => new
-                {
-                    ProductId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    TenantId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    BranchId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    ProductName = table.Column<string>(type: "varchar(255)", nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    TotalFee = table.Column<decimal>(type: "decimal(10,2)", precision: 18, scale: 2, nullable: false),
-                    HSNCode = table.Column<string>(type: "varchar(20)", maxLength: 20, nullable: true)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    TaxId = table.Column<int>(type: "int", nullable: true),
-                    DiscountId = table.Column<int>(type: "int", nullable: true),
-                    IsTaxInclusive = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false),
-                    CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Products", x => x.ProductId);
+                    table.PrimaryKey("PK_Branches", x => x.BranchId);
                     table.ForeignKey(
-                        name: "FK_Products_Branches_BranchId",
-                        column: x => x.BranchId,
-                        principalTable: "Branches",
-                        principalColumn: "BranchId",
+                        name: "FK_Branches_Countries_CountryId",
+                        column: x => x.CountryId,
+                        principalTable: "Countries",
+                        principalColumn: "CountryId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Products_Discounts_DiscountId",
-                        column: x => x.DiscountId,
-                        principalTable: "Discounts",
-                        principalColumn: "DiscountId");
+                        name: "FK_Branches_States_StateId",
+                        column: x => x.StateId,
+                        principalTable: "States",
+                        principalColumn: "StateId",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Products_Taxes_TaxId",
-                        column: x => x.TaxId,
-                        principalTable: "Taxes",
-                        principalColumn: "TaxId");
-                    table.ForeignKey(
-                        name: "FK_Products_TenantDetails_TenantId",
+                        name: "FK_Branches_TenantDetails_TenantId",
                         column: x => x.TenantId,
                         principalTable: "TenantDetails",
                         principalColumn: "TenantId",
                         onDelete: ReferentialAction.Cascade);
-                })
-                .Annotation("MySql:CharSet", "utf8mb4");
-
-            migrationBuilder.CreateTable(
-                name: "Shifts",
-                columns: table => new
-                {
-                    ShiftId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    TenantId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    BranchId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    ShiftName = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false),
-                    UserId = table.Column<Guid>(type: "char(36)", nullable: true, collation: "ascii_general_ci")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Shifts", x => x.ShiftId);
-                    table.ForeignKey(
-                        name: "FK_Shifts_Branches_BranchId",
-                        column: x => x.BranchId,
-                        principalTable: "Branches",
-                        principalColumn: "BranchId",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Shifts_TenantDetails_TenantId",
-                        column: x => x.TenantId,
-                        principalTable: "TenantDetails",
-                        principalColumn: "TenantId",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Shifts_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "UserId");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -498,13 +336,162 @@ namespace ProviGo.Common.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
+                name: "Charges",
+                columns: table => new
+                {
+                    ChargeId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    Name = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    ChargeType = table.Column<string>(type: "varchar(20)", maxLength: 20, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Value = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    TenantId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    BranchId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    UpdatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Charges", x => x.ChargeId);
+                    table.ForeignKey(
+                        name: "FK_Charges_Branches_BranchId",
+                        column: x => x.BranchId,
+                        principalTable: "Branches",
+                        principalColumn: "BranchId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Charges_TenantDetails_TenantId",
+                        column: x => x.TenantId,
+                        principalTable: "TenantDetails",
+                        principalColumn: "TenantId",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "Customers",
+                columns: table => new
+                {
+                    CustomerId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    CustomerName = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Phone = table.Column<string>(type: "varchar(10)", maxLength: 10, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Email = table.Column<string>(type: "varchar(250)", maxLength: 250, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    State = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Address = table.Column<string>(type: "varchar(500)", maxLength: 500, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    GSTIN = table.Column<string>(type: "varchar(15)", maxLength: 15, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    JoinDate = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    TenantId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    BranchId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    UpdatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false, defaultValue: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Customers", x => x.CustomerId);
+                    table.ForeignKey(
+                        name: "FK_Customers_Branches_BranchId",
+                        column: x => x.BranchId,
+                        principalTable: "Branches",
+                        principalColumn: "BranchId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Customers_TenantDetails_TenantId",
+                        column: x => x.TenantId,
+                        principalTable: "TenantDetails",
+                        principalColumn: "TenantId",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "Discounts",
+                columns: table => new
+                {
+                    DiscountId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    Name = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Type = table.Column<string>(type: "varchar(20)", maxLength: 20, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Value = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    TenantId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    BranchId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    UpdatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Discounts", x => x.DiscountId);
+                    table.ForeignKey(
+                        name: "FK_Discounts_Branches_BranchId",
+                        column: x => x.BranchId,
+                        principalTable: "Branches",
+                        principalColumn: "BranchId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Discounts_TenantDetails_TenantId",
+                        column: x => x.TenantId,
+                        principalTable: "TenantDetails",
+                        principalColumn: "TenantId",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "Shifts",
+                columns: table => new
+                {
+                    ShiftId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    ShiftName = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    UserId = table.Column<Guid>(type: "char(36)", nullable: true, collation: "ascii_general_ci"),
+                    TenantId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    BranchId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    UpdatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Shifts", x => x.ShiftId);
+                    table.ForeignKey(
+                        name: "FK_Shifts_Branches_BranchId",
+                        column: x => x.BranchId,
+                        principalTable: "Branches",
+                        principalColumn: "BranchId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Shifts_TenantDetails_TenantId",
+                        column: x => x.TenantId,
+                        principalTable: "TenantDetails",
+                        principalColumn: "TenantId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Shifts_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "UserId");
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
                 name: "Orders",
                 columns: table => new
                 {
                     OrderId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    TenantId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    BranchId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     CustomerId = table.Column<int>(type: "int", nullable: false),
                     OrderDate = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     Status = table.Column<string>(type: "varchar(20)", maxLength: 20, nullable: false)
@@ -515,7 +502,11 @@ namespace ProviGo.Common.Migrations
                     GrandTotal = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
                     PaidAmount = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
                     BalanceAmount = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false)
+                    TenantId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    BranchId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    UpdatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -542,31 +533,49 @@ namespace ProviGo.Common.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "TrainerProducts",
+                name: "Products",
                 columns: table => new
                 {
-                    TrainerProductId = table.Column<int>(type: "int", nullable: false)
+                    ProductId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    ProductName = table.Column<string>(type: "varchar(255)", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    TotalFee = table.Column<decimal>(type: "decimal(10,2)", precision: 18, scale: 2, nullable: false),
+                    HSNCode = table.Column<string>(type: "varchar(20)", maxLength: 20, nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    TaxId = table.Column<int>(type: "int", nullable: true),
+                    DiscountId = table.Column<int>(type: "int", nullable: true),
+                    IsTaxInclusive = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     TenantId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     BranchId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    TrainerId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    ProductId = table.Column<int>(type: "int", nullable: false),
+                    CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    UpdatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: true),
                     IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_TrainerProducts", x => x.TrainerProductId);
+                    table.PrimaryKey("PK_Products", x => x.ProductId);
                     table.ForeignKey(
-                        name: "FK_TrainerProducts_Products_ProductId",
-                        column: x => x.ProductId,
-                        principalTable: "Products",
-                        principalColumn: "ProductId",
+                        name: "FK_Products_Branches_BranchId",
+                        column: x => x.BranchId,
+                        principalTable: "Branches",
+                        principalColumn: "BranchId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_TrainerProducts_Users_TrainerId",
-                        column: x => x.TrainerId,
-                        principalTable: "Users",
-                        principalColumn: "UserId",
+                        name: "FK_Products_Discounts_DiscountId",
+                        column: x => x.DiscountId,
+                        principalTable: "Discounts",
+                        principalColumn: "DiscountId");
+                    table.ForeignKey(
+                        name: "FK_Products_Taxes_TaxId",
+                        column: x => x.TaxId,
+                        principalTable: "Taxes",
+                        principalColumn: "TaxId");
+                    table.ForeignKey(
+                        name: "FK_Products_TenantDetails_TenantId",
+                        column: x => x.TenantId,
+                        principalTable: "TenantDetails",
+                        principalColumn: "TenantId",
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
@@ -577,16 +586,25 @@ namespace ProviGo.Common.Migrations
                 {
                     AttendanceId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    TenantId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     CustomerId = table.Column<int>(type: "int", nullable: false),
                     ShiftId = table.Column<int>(type: "int", nullable: false),
                     AttendanceDate = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     IsPresent = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    TenantId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    BranchId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    UpdatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: true),
                     IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AttendanceRecords", x => x.AttendanceId);
+                    table.ForeignKey(
+                        name: "FK_AttendanceRecords_Branches_BranchId",
+                        column: x => x.BranchId,
+                        principalTable: "Branches",
+                        principalColumn: "BranchId",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_AttendanceRecords_Customers_CustomerId",
                         column: x => x.CustomerId,
@@ -736,36 +754,6 @@ namespace ProviGo.Common.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "OrderItems",
-                columns: table => new
-                {
-                    OrderItemId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    OrderId = table.Column<int>(type: "int", nullable: false),
-                    ProductId = table.Column<int>(type: "int", nullable: false),
-                    Quantity = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
-                    UnitPrice = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
-                    TotalPrice = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_OrderItems", x => x.OrderItemId);
-                    table.ForeignKey(
-                        name: "FK_OrderItems_Orders_OrderId",
-                        column: x => x.OrderId,
-                        principalTable: "Orders",
-                        principalColumn: "OrderId",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_OrderItems_Products_ProductId",
-                        column: x => x.ProductId,
-                        principalTable: "Products",
-                        principalColumn: "ProductId",
-                        onDelete: ReferentialAction.Cascade);
-                })
-                .Annotation("MySql:CharSet", "utf8mb4");
-
-            migrationBuilder.CreateTable(
                 name: "OrderTax",
                 columns: table => new
                 {
@@ -799,8 +787,6 @@ namespace ProviGo.Common.Migrations
                 {
                     PaymentId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    TenantId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    BranchId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     OrderId = table.Column<int>(type: "int", nullable: false),
                     Mode = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
@@ -808,7 +794,11 @@ namespace ProviGo.Common.Migrations
                     PaidAmount = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
                     Status = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false)
+                    TenantId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    BranchId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    UpdatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -835,33 +825,73 @@ namespace ProviGo.Common.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "ProductOfferings",
+                name: "OrderItems",
                 columns: table => new
                 {
-                    OfferingId = table.Column<int>(type: "int", nullable: false)
+                    OrderItemId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    OrderId = table.Column<int>(type: "int", nullable: false),
+                    ProductId = table.Column<int>(type: "int", nullable: false),
+                    Quantity = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    UnitPrice = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    TotalPrice = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OrderItems", x => x.OrderItemId);
+                    table.ForeignKey(
+                        name: "FK_OrderItems_Orders_OrderId",
+                        column: x => x.OrderId,
+                        principalTable: "Orders",
+                        principalColumn: "OrderId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_OrderItems_Products_ProductId",
+                        column: x => x.ProductId,
+                        principalTable: "Products",
+                        principalColumn: "ProductId",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "TrainerProducts",
+                columns: table => new
+                {
+                    TrainerProductId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     TenantId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     BranchId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    TrainerCourseId = table.Column<int>(type: "int", nullable: false),
-                    ShiftId = table.Column<int>(type: "int", nullable: false),
-                    StartTime = table.Column<TimeSpan>(type: "time(6)", nullable: false),
-                    EndTime = table.Column<TimeSpan>(type: "time(6)", nullable: false),
+                    TrainerId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    ProductId = table.Column<int>(type: "int", nullable: false),
                     IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ProductOfferings", x => x.OfferingId);
+                    table.PrimaryKey("PK_TrainerProducts", x => x.TrainerProductId);
                     table.ForeignKey(
-                        name: "FK_ProductOfferings_Shifts_ShiftId",
-                        column: x => x.ShiftId,
-                        principalTable: "Shifts",
-                        principalColumn: "ShiftId",
+                        name: "FK_TrainerProducts_Branches_BranchId",
+                        column: x => x.BranchId,
+                        principalTable: "Branches",
+                        principalColumn: "BranchId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_ProductOfferings_TrainerProducts_TrainerCourseId",
-                        column: x => x.TrainerCourseId,
-                        principalTable: "TrainerProducts",
-                        principalColumn: "TrainerProductId",
+                        name: "FK_TrainerProducts_Products_ProductId",
+                        column: x => x.ProductId,
+                        principalTable: "Products",
+                        principalColumn: "ProductId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_TrainerProducts_TenantDetails_TenantId",
+                        column: x => x.TenantId,
+                        principalTable: "TenantDetails",
+                        principalColumn: "TenantId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_TrainerProducts_Users_TrainerId",
+                        column: x => x.TrainerId,
+                        principalTable: "Users",
+                        principalColumn: "UserId",
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
@@ -938,8 +968,6 @@ namespace ProviGo.Common.Migrations
                 {
                     RefundId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    TenantId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    BranchId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     PaymentId = table.Column<int>(type: "int", nullable: false),
                     OrderId = table.Column<int>(type: "int", nullable: false),
                     Mode = table.Column<string>(type: "longtext", nullable: false)
@@ -951,11 +979,21 @@ namespace ProviGo.Common.Migrations
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     GatewayRefundId = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false)
+                    TenantId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    BranchId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    CreatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    UpdatedOn = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Refunds", x => x.RefundId);
+                    table.ForeignKey(
+                        name: "FK_Refunds_Branches_BranchId",
+                        column: x => x.BranchId,
+                        principalTable: "Branches",
+                        principalColumn: "BranchId",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_Refunds_Payments_PaymentId",
                         column: x => x.PaymentId,
@@ -967,6 +1005,50 @@ namespace ProviGo.Common.Migrations
                         column: x => x.TenantId,
                         principalTable: "TenantDetails",
                         principalColumn: "TenantId",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "ProductOfferings",
+                columns: table => new
+                {
+                    OfferingId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    TenantId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    BranchId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    TrainerCourseId = table.Column<int>(type: "int", nullable: false),
+                    ShiftId = table.Column<int>(type: "int", nullable: false),
+                    StartTime = table.Column<TimeSpan>(type: "time(6)", nullable: false),
+                    EndTime = table.Column<TimeSpan>(type: "time(6)", nullable: false),
+                    IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProductOfferings", x => x.OfferingId);
+                    table.ForeignKey(
+                        name: "FK_ProductOfferings_Branches_BranchId",
+                        column: x => x.BranchId,
+                        principalTable: "Branches",
+                        principalColumn: "BranchId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProductOfferings_Shifts_ShiftId",
+                        column: x => x.ShiftId,
+                        principalTable: "Shifts",
+                        principalColumn: "ShiftId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProductOfferings_TenantDetails_TenantId",
+                        column: x => x.TenantId,
+                        principalTable: "TenantDetails",
+                        principalColumn: "TenantId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProductOfferings_TrainerProducts_TrainerCourseId",
+                        column: x => x.TrainerCourseId,
+                        principalTable: "TrainerProducts",
+                        principalColumn: "TrainerProductId",
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
@@ -1011,6 +1093,11 @@ namespace ProviGo.Common.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_AttendanceRecords_BranchId",
+                table: "AttendanceRecords",
+                column: "BranchId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_AttendanceRecords_CustomerId",
                 table: "AttendanceRecords",
                 column: "CustomerId");
@@ -1026,9 +1113,24 @@ namespace ProviGo.Common.Migrations
                 column: "TenantId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Branches_CountryId",
+                table: "Branches",
+                column: "CountryId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Branches_StateId",
+                table: "Branches",
+                column: "StateId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Branches_TenantId",
                 table: "Branches",
                 column: "TenantId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Charges_BranchId",
+                table: "Charges",
+                column: "BranchId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Charges_TenantId",
@@ -1055,6 +1157,11 @@ namespace ProviGo.Common.Migrations
                 table: "Customers",
                 columns: new[] { "TenantId", "BranchId", "Email" },
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Discounts_BranchId",
+                table: "Discounts",
+                column: "BranchId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Discounts_TenantId",
@@ -1168,9 +1275,19 @@ namespace ProviGo.Common.Migrations
                 column: "PaymentId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_ProductOfferings_BranchId",
+                table: "ProductOfferings",
+                column: "BranchId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ProductOfferings_ShiftId",
                 table: "ProductOfferings",
                 column: "ShiftId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductOfferings_TenantId",
+                table: "ProductOfferings",
+                column: "TenantId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ProductOfferings_TrainerCourseId",
@@ -1197,6 +1314,11 @@ namespace ProviGo.Common.Migrations
                 table: "Products",
                 columns: new[] { "TenantId", "BranchId", "ProductName" },
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Refunds_BranchId",
+                table: "Refunds",
+                column: "BranchId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Refunds_PaymentId",
@@ -1250,9 +1372,19 @@ namespace ProviGo.Common.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_TrainerProducts_BranchId",
+                table: "TrainerProducts",
+                column: "BranchId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_TrainerProducts_ProductId",
                 table: "TrainerProducts",
                 column: "ProductId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TrainerProducts_TenantId",
+                table: "TrainerProducts",
+                column: "TenantId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_TrainerProducts_TrainerId",
@@ -1260,9 +1392,10 @@ namespace ProviGo.Common.Migrations
                 column: "TrainerId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserBranches_UserId",
+                name: "IX_UserBranches_UserId_BranchId",
                 table: "UserBranches",
-                column: "UserId");
+                columns: new[] { "UserId", "BranchId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_RoleId",
@@ -1315,9 +1448,6 @@ namespace ProviGo.Common.Migrations
                 name: "Refunds");
 
             migrationBuilder.DropTable(
-                name: "States");
-
-            migrationBuilder.DropTable(
                 name: "Subscriptions");
 
             migrationBuilder.DropTable(
@@ -1337,9 +1467,6 @@ namespace ProviGo.Common.Migrations
 
             migrationBuilder.DropTable(
                 name: "Payments");
-
-            migrationBuilder.DropTable(
-                name: "Countries");
 
             migrationBuilder.DropTable(
                 name: "Plans");
@@ -1375,7 +1502,13 @@ namespace ProviGo.Common.Migrations
                 name: "Branches");
 
             migrationBuilder.DropTable(
+                name: "States");
+
+            migrationBuilder.DropTable(
                 name: "TenantDetails");
+
+            migrationBuilder.DropTable(
+                name: "Countries");
         }
     }
 }

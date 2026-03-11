@@ -10,13 +10,14 @@ namespace ProviGo.Common.Models
 {
     [Table("Users")]
 
-    public class User
+    public class User 
     {
         [Key]
         public Guid UserId { get; set; } = Guid.NewGuid();
-
-        [Required]
+        
+        [Required, MaxLength(100)]
         public Guid TenantId { get; set; }
+
         public string Email { get; set; } = default!;
 
         [Required, MaxLength(100)]
@@ -35,11 +36,9 @@ namespace ProviGo.Common.Models
         public int RoleId { get; set; }
 
         public string UserCategory { get; set; }
-
-        public bool IsActive { get; set; } = true;
-
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime LastUpdatedAt { get; set; } = DateTime.UtcNow;
+        public bool IsActive { get; set; }
+        public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
+        public DateTime? UpdatedOn { get; set; }
 
         // One User → Many Logs
         public ICollection<UsersLog> UsersLogs { get; set; }

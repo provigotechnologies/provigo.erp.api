@@ -31,14 +31,14 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddMemoryCache();
 builder.Services.AddCommonPagination();
 
-// 🔹 Master DB (Tenant Registry)
+// 🔹 Master DB 
 builder.Services.AddDbContext<MasterDbContext>(options =>
     options.UseMySql(
         builder.Configuration.GetConnectionString("Master"),
         ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("Master"))
     ));
 
-// 🔹 Tenant DB (Per Tenant Connection)
+// 🔹 Tenant DB 
 builder.Services.AddDbContext<TenantDbContext>((sp, options) =>
 {
     var provider = sp.GetRequiredService<TenantProvider>();
@@ -76,8 +76,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
 
-            ValidIssuer = jwtIssuer,       // MUST match IdentityService
-            ValidAudience = jwtAudience,   // MUST match IdentityService
+            ValidIssuer = jwtIssuer,       
+            ValidAudience = jwtAudience,   
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
         };
 

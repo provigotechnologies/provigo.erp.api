@@ -9,21 +9,18 @@ namespace TenantService.Services.Interface
     {
         Task<ApiResponse<List<Branch>>> GetBranchesAsync(
             PaginationRequest request, 
-            bool includeInactive,
-            Guid tenantId);
+            bool includeInactive);
 
         Task<ApiResponse<BranchResponseDto>> CreateBranchAsync(
-            BranchCreateDto dto, 
-            Guid tenantId);
+            BranchCreateDto dto);
 
         Task<ApiResponse<string>> UpdateBranchAsync(
             Guid branchId,
-            BranchUpdateDto dto,
-            Guid tenantId);
+            BranchUpdateDto dto);
 
-        Task<ApiResponse<string>> RemoveBranchAsync(Guid branchId, Guid tenantId);
+        Task<ApiResponse<string>> RemoveBranchAsync(Guid branchId);
 
-        Task<ApiResponse<BranchResponseDto>> GetBranchByIdAsync(Guid branchId, Guid tenantId);
+        Task<ApiResponse<BranchResponseDto>> GetBranchByIdAsync(Guid branchId);
 
         Task<List<StateDropdownDto>> GetStateDropdownAsync();
 

@@ -9,16 +9,10 @@ using System.Threading.Tasks;
 namespace ProviGo.Common.Models
 {
     [Table("Orders")]
-    public class Order
+    public class Order : BaseEntity
     {
         [Key]
         public int OrderId { get; set; }
-
-        [Required]
-        public Guid TenantId { get; set; }
-
-        [Required]
-        public Guid BranchId { get; set; }
 
         [Required]
         public int CustomerId { get; set; }
@@ -32,7 +26,6 @@ namespace ProviGo.Common.Models
         public decimal GrandTotal { get; set; }
         public decimal PaidAmount { get; set; }
         public decimal BalanceAmount { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // 🔗 Navigation
         [ForeignKey(nameof(BranchId))]

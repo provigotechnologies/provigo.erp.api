@@ -11,16 +11,17 @@ using ShiftService.Services.Interface;
 namespace ShiftService.Services.Implementation
 {
     public class ProductOfferingService(
-        TenantDbContext db,
-        TenantProvider tenantProvider,
-        BranchAccessService branchAccess,
-        IGenericRepository<ProductOffering> repo)
-        : IProductOfferingService
+     TenantDbContext db,
+     IGenericRepository<ProductOffering> repo,
+     BranchAccessService branchAccess,
+     TenantProvider tenantProvider,
+     CurrentUserService currentUser) : IProductOfferingService
     {
         private readonly TenantDbContext _db = db;
-        private readonly TenantProvider _tenantProvider = tenantProvider;
-        private readonly BranchAccessService _branchAccess = branchAccess;
         private readonly IGenericRepository<ProductOffering> _repo = repo;
+        private readonly BranchAccessService _branchAccess = branchAccess;
+        private readonly TenantProvider _tenantProvider = tenantProvider;
+        private readonly CurrentUserService _currentUser = currentUser;
 
         // CREATE OFFERING
         public async Task<ApiResponse<string>> CreateProductOfferingAsync(
@@ -28,6 +29,8 @@ namespace ShiftService.Services.Implementation
         {
             try
             {
+                _currentUser.EnsureWriteAccess();
+
                 var tenantId = _tenantProvider.TenantId;
 
                 var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
@@ -143,6 +146,8 @@ namespace ShiftService.Services.Implementation
         {
             try
             {
+                _currentUser.EnsureWriteAccess();
+
                 var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
 
                 var offering = await _db.ProductOfferings
@@ -195,6 +200,8 @@ namespace ShiftService.Services.Implementation
         {
             try
             {
+                _currentUser.EnsureWriteAccess();
+
                 var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
 
                 var offering = await _db.ProductOfferings

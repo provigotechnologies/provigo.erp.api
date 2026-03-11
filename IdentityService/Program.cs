@@ -18,9 +18,22 @@ using System.Text.Json;
 
 // Builder
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddScoped<IIdentityService, IdentityService.Services.Implementation.IdentityService>();
+
+// Tenant & User Services 
+builder.Services.AddScoped<TenantProvider>();
+builder.Services.AddScoped<CurrentUserService>();
+builder.Services.AddScoped<BranchAccessService>();
+builder.Services.AddScoped<TokenService>();
+
+// Generic Repository
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
+// Application Services
+builder.Services.AddScoped<IIdentityService, IdentityService.Services.Implementation.IdentityService>();
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddMemoryCache();
+builder.Services.AddCommonPagination();
 
 // Master DB
 builder.Services.AddDbContext<MasterDbContext>(options =>
@@ -65,15 +78,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
-
-// Application Service
-builder.Services.AddScoped<TenantProvider>();
-builder.Services.AddScoped<ITenantProvider>(sp => sp.GetRequiredService<TenantProvider>());
-builder.Services.AddScoped<TokenService>();
-
-builder.Services.AddMemoryCache();
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<CurrentUserService>();
 
 // Swagger (JWT + Tenant Header)
 builder.Services.AddEndpointsApiExplorer();
@@ -128,6 +132,7 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
+
 // Controllers
 builder.Services.AddControllers().AddJsonOptions(options =>
 {

@@ -9,16 +9,13 @@ using System.Threading.Tasks;
 namespace ProviGo.Common.Models
 {
     [Table("Subscriptions")]
-    public class Subscription
+    public class Subscription 
     {
         [Key]
         public int SubscriptionId { get; set; }
 
         [Required]
         public Guid TenantId { get; set; }
-
-        [ForeignKey(nameof(TenantId))]
-        public TenantDetails TenantDetails { get; set; }
 
         [Required]
         public int PlanId { get; set; }
@@ -31,9 +28,11 @@ namespace ProviGo.Common.Models
 
         [Required]
         public DateTime EndDate { get; set; }
-
-        [Required]
         public bool IsActive { get; set; }
+
+
+        [ForeignKey(nameof(TenantId))]
+        public TenantDetails TenantDetails { get; set; }
     }
 
 }

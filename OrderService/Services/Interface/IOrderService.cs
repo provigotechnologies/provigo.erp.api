@@ -10,40 +10,31 @@ namespace OrderService.Services.Interface
         Task<ApiResponse<List<OrderResponseDto>>> GetOrdersAsync(
              PaginationRequest request,
              bool includeInactive,
-             Guid branchId,
-             Guid tenantId);
+             Guid branchId);
 
         Task<ApiResponse<List<OrderResponseDto>>> GetOrderByIdAsync(
             int orderId,
-            Guid branchId,
-            Guid tenantId);
+            Guid branchId);
+
+        Task<ApiResponse<OrderResponseDto>> CreateOrderAsync(OrderCreateDto dto);
 
         Task<ApiResponse<string>> UpdateOrderAsync(
             int orderId,
             OrderUpdateDto dto,
-            Guid branchId,
-            Guid tenantId);
-
-        Task<ApiResponse<OrderResponseDto>> CreateOrderAsync(
-            OrderCreateDto dto,
-            Guid branchId,
-            Guid tenantId);
+            Guid branchId);
 
         Task<ApiResponse<string>> RemoveOrderAsync(
             int orderId,
-            Guid branchId,
-            Guid tenantId);
+            Guid branchId);
 
         Task<ApiResponse<string>> UpdatePaymentAsync(
             int orderId,
             decimal paidAmount,
-            Guid branchId,
-            Guid tenantId);
+            Guid branchId);
 
         Task<ApiResponse<string>> UpdateRefundAsync(
             int orderId,
             decimal refundAmount,
-            Guid branchId,
-            Guid tenantId);
+            Guid branchId);
     }
 }

@@ -5,16 +5,20 @@ using OrderService.Services.Internal;
 using ProviGo.Common.Data;
 using ProviGo.Common.Models;
 using ProviGo.Common.Pagination;
+using ProviGo.Common.Providers;
 using ProviGo.Common.Response;
+using ProviGo.Common.Services;
 
 namespace OrderService.Services.Implementation
 {
     public class OrderService(
         TenantDbContext db,
-        IGenericRepository<Order> repo) : IOrderService
+        IGenericRepository<Order> repo,
+        TenantProvider tenantProvider) : IOrderService
     {
         private readonly TenantDbContext _db = db;
         private readonly IGenericRepository<Order> _repo = repo;
+        private readonly TenantProvider _tenantProvider = tenantProvider;
 
         // 🔹 Helper: Map Order Entity -> OrderDto
         private OrderResponseDto MapToDto(Order order)
@@ -33,7 +37,7 @@ namespace OrderService.Services.Implementation
                 GrandTotal = order.GrandTotal,
                 PaidAmount = order.PaidAmount,
                 BalanceAmount = order.BalanceAmount,
-                CreatedAt = order.CreatedAt,
+                CreatedAt = order.CreatedOn,
 
                 Items = order.OrderItems?.Select(i => new OrderItemResponseDto
                 {
@@ -64,13 +68,15 @@ namespace OrderService.Services.Implementation
         }
 
         // ✅ CREATE ORDER
-        public async Task<ApiResponse<OrderResponseDto>> CreateOrderAsync(OrderCreateDto dto, Guid branchId, Guid tenantId)
+        public async Task<ApiResponse<OrderResponseDto>> CreateOrderAsync(OrderCreateDto dto)
         {
             try
             {
+                var tenantId = _tenantProvider.TenantId;
+
                 // 🔒 Validate Branch
                 if (!await _db.Branches
-                        .AnyAsync(b => b.BranchId == branchId && b.TenantId == tenantId))
+                        .AnyAsync(b => b.BranchId == dto.BranchId && b.TenantId == tenantId))
                     return ApiResponseFactory.Failure<OrderResponseDto>("Invalid branch");
 
                 // 🔒 Validate Customer
@@ -152,7 +158,7 @@ namespace OrderService.Services.Implementation
                 var order = new Order
                 {
                     TenantId = tenantId,
-                    BranchId = branchId,
+                    BranchId = dto.BranchId,
                     CustomerId = dto.CustomerId,
                     OrderDate = dto.OrderDate == default
                         ? DateTime.UtcNow
@@ -192,12 +198,11 @@ namespace OrderService.Services.Implementation
         public async Task<ApiResponse<List<OrderResponseDto>>> GetOrdersAsync(
         PaginationRequest request,
         bool includeInactive,
-        Guid branchId,
-        Guid tenantId)
+        Guid branchId)
         {
             // 1️⃣ Build query
             var query = _db.Orders
-                .Where(o => o.TenantId == tenantId && o.BranchId == branchId)
+                .Where(o => o.TenantId == _tenantProvider.TenantId && o.BranchId == branchId)
                 .Include(o => o.OrderItems)
                 .Include(o => o.OrderDiscounts)
                 .Include(o => o.OrderTaxes)
@@ -225,7 +230,7 @@ namespace OrderService.Services.Implementation
         }
 
 
-        public async Task<ApiResponse<List<OrderResponseDto>>> GetOrderByIdAsync(int orderId, Guid branchId, Guid tenantId)
+        public async Task<ApiResponse<List<OrderResponseDto>>> GetOrderByIdAsync(int orderId, Guid branchId)
         {
             var order = await _db.Orders
                 .Include(o => o.OrderItems)
@@ -233,7 +238,7 @@ namespace OrderService.Services.Implementation
                 .Include(o => o.OrderDiscounts)
                 .Include(o => o.OrderCharges)
                 .AsNoTracking()
-                .FirstOrDefaultAsync(o => o.OrderId == orderId && o.TenantId == tenantId && o.BranchId == branchId);
+                .FirstOrDefaultAsync(o => o.OrderId == orderId && o.TenantId == _tenantProvider.TenantId && o.BranchId == branchId);
 
             if (order == null)
                 return ApiResponseFactory.Failure<List<OrderResponseDto>>("Order not found");
@@ -243,7 +248,7 @@ namespace OrderService.Services.Implementation
 
 
         // ✅ UPDATE STATUS ONLY
-        public async Task<ApiResponse<string>> UpdateOrderAsync(int orderId, OrderUpdateDto dto, Guid branchId, Guid tenantId)
+        public async Task<ApiResponse<string>> UpdateOrderAsync(int orderId, OrderUpdateDto dto, Guid branchId)
         {
             var allowedStatuses = new[] { "Created", "Confirmed", "Completed", "Cancelled" };
 
@@ -251,7 +256,7 @@ namespace OrderService.Services.Implementation
                 return ApiResponseFactory.Failure<string>("Invalid status");
 
             var affectedRows = await _db.Orders
-                .Where(o => o.OrderId == orderId && o.TenantId == tenantId && o.BranchId == branchId)
+                .Where(o => o.OrderId == orderId && o.TenantId == _tenantProvider.TenantId && o.BranchId == branchId)
                 .ExecuteUpdateAsync(s => s.SetProperty(o => o.Status, dto.Status));
 
             if (affectedRows == 0)
@@ -262,10 +267,10 @@ namespace OrderService.Services.Implementation
 
 
         // ✅ DELETE ORDER
-        public async Task<ApiResponse<string>> RemoveOrderAsync(int orderId, Guid branchId, Guid tenantId)
+        public async Task<ApiResponse<string>> RemoveOrderAsync(int orderId, Guid branchId)
         {
             var order = await _db.Orders
-                .FirstOrDefaultAsync(o => o.OrderId == orderId && o.TenantId == tenantId && o.BranchId == branchId);
+                .FirstOrDefaultAsync(o => o.OrderId == orderId && o.TenantId == _tenantProvider.TenantId && o.BranchId == branchId);
 
             if (order == null)
                 return ApiResponseFactory.Failure<string>("Order not found");
@@ -281,13 +286,12 @@ namespace OrderService.Services.Implementation
         public async Task<ApiResponse<string>> UpdatePaymentAsync(
          int orderId,
          decimal paidAmount,
-         Guid branchId,
-         Guid tenantId)
+         Guid branchId)
         {
             var order = await _db.Orders
                 .FirstOrDefaultAsync(o =>
                     o.OrderId == orderId &&
-                    o.TenantId == tenantId &&
+                    o.TenantId == _tenantProvider.TenantId &&
                     o.BranchId == branchId);
 
             if (order == null)
@@ -318,13 +322,12 @@ namespace OrderService.Services.Implementation
         public async Task<ApiResponse<string>> UpdateRefundAsync(
         int orderId,
         decimal refundAmount,
-        Guid branchId,
-        Guid tenantId)
+        Guid branchId)
         {
             var order = await _db.Orders
                 .FirstOrDefaultAsync(o =>
                     o.OrderId == orderId &&
-                    o.TenantId == tenantId &&
+                    o.TenantId == _tenantProvider.TenantId &&
                     o.BranchId == branchId);
 
             if (order == null)

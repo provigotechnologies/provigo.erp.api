@@ -21,19 +21,17 @@ namespace TenantService.Endpoints
             app.MapGet("/api/branches", async (
                 [AsParameters] PaginationRequest request,
                 bool includeInactive,
-                [FromServices] TenantProvider tenantProvider,
                 IBranchService branchService) =>
             {
-                var response = await branchService.GetBranchesAsync(request, includeInactive, tenantProvider.TenantId);
+                var response = await branchService.GetBranchesAsync(request, includeInactive);
                 return Results.Ok(response);
             });
 
             app.MapPost("/api/branches", async (
                 BranchCreateDto dto,
-                [FromServices] TenantProvider tenantProvider,
                 IBranchService branchService) =>
             {
-                var response = await branchService.CreateBranchAsync(dto, tenantProvider.TenantId);
+                var response = await branchService.CreateBranchAsync(dto);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -42,10 +40,9 @@ namespace TenantService.Endpoints
             app.MapPut("/api/branches/{branchId:guid}", async (
                 Guid branchId,
                 BranchUpdateDto dto,
-                [FromServices] TenantProvider tenantProvider,
                 IBranchService branchService) =>
             {
-                var response = await branchService.UpdateBranchAsync(branchId, dto, tenantProvider.TenantId);
+                var response = await branchService.UpdateBranchAsync(branchId, dto);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);
@@ -53,10 +50,9 @@ namespace TenantService.Endpoints
 
             app.MapDelete("/api/branches/{branchId:guid}", async (
                 Guid branchId,
-                [FromServices] TenantProvider tenantProvider,
                 IBranchService branchService) =>
             {
-                var response = await branchService.RemoveBranchAsync(branchId, tenantProvider.TenantId);
+                var response = await branchService.RemoveBranchAsync(branchId);
                 return response.Success
                     ? Results.Ok(response)
                     : Results.BadRequest(response);

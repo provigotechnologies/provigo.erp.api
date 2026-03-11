@@ -1,23 +1,30 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using ProviGo.Common.Constants;
 using ProviGo.Common.Models;
 using ProviGo.Common.Providers;
+using ProviGo.Common.Services;
 
 namespace ProviGo.Common.Data
 {
     public class TenantDbContext : DbContext
     {
         private readonly TenantProvider? _tenant;
+        private readonly CurrentUserService? _currentUser;
 
         // expose tenant id for global filters
         public Guid CurrentTenantId => _tenant?.TenantId ?? Guid.Empty;
+        public List<Guid> CurrentUserBranches => _currentUser?.BranchIds ?? new List<Guid>();
+        public bool IsSuperAdmin =>
+            _currentUser?.Role?.Equals(Roles.SuperAdmin, StringComparison.OrdinalIgnoreCase) ?? false;
 
         // Runtime constructor
         public TenantDbContext(
             DbContextOptions<TenantDbContext> options,
-            TenantProvider tenant)
-            : base(options)
+            TenantProvider tenant,
+            CurrentUserService currentUser): base(options)
         {
             _tenant = tenant;
+            _currentUser = currentUser;
         }
 
         // Design time constructor (for migrations)
@@ -50,6 +57,10 @@ namespace ProviGo.Common.Data
                 .HasForeignKey(l => l.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<UserBranch>()
+                .HasIndex(ub => new { ub.UserId, ub.BranchId })
+                .IsUnique();
+
             modelBuilder.Entity<State>()
                 .HasOne(s => s.Country)
                 .WithMany()
@@ -59,10 +70,10 @@ namespace ProviGo.Common.Data
             // ===== SEED ROLES =====
 
             modelBuilder.Entity<UserRole>().HasData(
-                new UserRole { Id = 1, RoleName = "SuperAdmin" },
-                new UserRole { Id = 2, RoleName = "Admin" },
-                new UserRole { Id = 3, RoleName = "User" }
-            );
+                 new UserRole { Id = 1, RoleName = Roles.SuperAdmin },
+                 new UserRole { Id = 2, RoleName = Roles.Admin },
+                 new UserRole { Id = 3, RoleName = Roles.User }
+             );
 
             // ===== DEFAULT VALUES =====
 
@@ -113,10 +124,14 @@ namespace ProviGo.Common.Data
             // ===== GLOBAL TENANT FILTER =====
 
             modelBuilder.Entity<Customer>()
-                .HasQueryFilter(e => e.TenantId == CurrentTenantId);
+             .HasQueryFilter(e =>
+                  e.TenantId == CurrentTenantId &&
+                  (IsSuperAdmin || CurrentUserBranches.Contains(e.BranchId)));
 
             modelBuilder.Entity<Product>()
-                .HasQueryFilter(e => e.TenantId == CurrentTenantId);
+             .HasQueryFilter(e =>
+                 e.TenantId == CurrentTenantId &&
+                 (IsSuperAdmin || CurrentUserBranches.Contains(e.BranchId)));
 
             modelBuilder.Entity<Branch>()
                 .HasQueryFilter(e => e.TenantId == CurrentTenantId);
@@ -125,7 +140,9 @@ namespace ProviGo.Common.Data
                 .HasQueryFilter(e => e.TenantId == CurrentTenantId);
 
             modelBuilder.Entity<Order>()
-                .HasQueryFilter(e => e.TenantId == CurrentTenantId);
+            .HasQueryFilter(e =>
+                e.TenantId == CurrentTenantId &&
+                (IsSuperAdmin || CurrentUserBranches.Contains(e.BranchId)));
 
             modelBuilder.Entity<Payment>()
                 .HasQueryFilter(e => e.TenantId == CurrentTenantId);

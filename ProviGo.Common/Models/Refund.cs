@@ -8,12 +8,9 @@ using System.Threading.Tasks;
 namespace ProviGo.Common.Models
 {
     [Table("Refunds")]
-    public class Refund
+    public class Refund : BaseEntity
     {
         public int RefundId { get; set; }
-        public Guid TenantId { get; set; }
-        public Guid BranchId { get; set; }
-
         public int PaymentId { get; set; }
         public int OrderId { get; set; }
         public string Mode { get; set; } = "OFFLINE";
@@ -23,11 +20,12 @@ namespace ProviGo.Common.Models
         public string Status { get; set; } // Initiated, Completed
 
         public string? GatewayRefundId { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
-
 
         [ForeignKey(nameof(TenantId))]
         public TenantDetails TenantDetails { get; set; }
+
+        [ForeignKey(nameof(BranchId))]
+        public Branch Branch { get; set; }
 
         [ForeignKey(nameof(PaymentId))]
         public Payment Payment { get; set; }

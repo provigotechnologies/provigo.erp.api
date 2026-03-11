@@ -77,7 +77,7 @@ namespace PaymentService.Services.Implementation
                 PaidAmount = dto.PaidAmount,       // only this installment
                 Status = dto.PaidAmount == orderBalance ? "Paid" : "Partial",
                 Mode = dto.Mode,
-                CreatedAt = DateTime.UtcNow        // keeps payment date
+                CreatedOn = DateTime.UtcNow        // keeps payment date
             };
 
             _db.Payments.Add(payment);
@@ -101,7 +101,7 @@ namespace PaymentService.Services.Implementation
                 BalanceAmount = payment.TotalAmount - order.PaidAmount - dto.PaidAmount,
                 PaymentStatus = payment.Status,
                 Mode = dto.Mode,
-                CreatedAt = payment.CreatedAt
+                CreatedAt = payment.CreatedOn
             });
         }
 
@@ -148,7 +148,7 @@ namespace PaymentService.Services.Implementation
                 PaidAmount = 0,                 // will update after verification
                 Status = "Pending",
                 Mode = "ONLINE",
-                CreatedAt = DateTime.UtcNow
+                CreatedOn = DateTime.UtcNow
             };
 
             _db.Payments.Add(onlinePayment);
@@ -298,7 +298,7 @@ namespace PaymentService.Services.Implementation
             var payments = await _db.Payments
                 .Where(p => p.OrderId == orderId && p.TenantId == tenantId && p.BranchId == branchId)
                 .Include(p => p.Transactions) // include online transactions
-                .OrderBy(p => p.CreatedAt)
+                .OrderBy(p => p.CreatedOn)
                 .ToListAsync();
 
             if (!payments.Any())
@@ -317,7 +317,7 @@ namespace PaymentService.Services.Implementation
                         Amount = payment.PaidAmount,
                         Mode = payment.Mode,
                         Status = payment.Status,
-                        PaidAt = payment.CreatedAt
+                        PaidAt = payment.CreatedOn
                     });
                 }
 
@@ -335,7 +335,7 @@ namespace PaymentService.Services.Implementation
                             Amount = tx.Amount,
                             Mode = tx.Mode,
                             Status = tx.Status,
-                            PaidAt = tx.PaidAt ?? payment.CreatedAt
+                            PaidAt = tx.PaidAt ?? payment.CreatedOn
                         });
                     }
                 }
@@ -385,7 +385,7 @@ namespace PaymentService.Services.Implementation
                     Reason = dto.Reason,
                     Status = "Success",
                     Mode = dto.Mode, // CASH / UPI
-                    CreatedAt = DateTime.UtcNow
+                    CreatedOn = DateTime.UtcNow
                 };
 
                 _db.Refunds.Add(refund);
@@ -441,7 +441,7 @@ namespace PaymentService.Services.Implementation
                     RefundAmount = refund.RefundAmount,
                     Reason = refund.Reason,
                     Status = refund.Status,
-                    CreatedAt = refund.CreatedAt
+                    CreatedAt = refund.CreatedOn
                 }, "Offline refund processed successfully");
             }
             catch (Exception ex)
@@ -498,7 +498,7 @@ namespace PaymentService.Services.Implementation
                 Status = "Pending",
                 Mode = "ONLINE",
                 GatewayRefundId = razorRefund["id"]?.ToString(),
-                CreatedAt = DateTime.UtcNow
+                CreatedOn = DateTime.UtcNow
             };
 
             _db.Refunds.Add(refund);

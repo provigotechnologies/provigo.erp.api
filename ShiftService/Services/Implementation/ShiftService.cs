@@ -11,15 +11,17 @@ using ShiftService.Services.Interface;
 namespace ShiftService.Services.Implementation
 {
     public class ShiftService(
-        TenantDbContext db,
-        IGenericRepository<Shift> repo,
-        BranchAccessService branchAccess,
-      TenantProvider tenantProvider) : IShiftService
+      TenantDbContext db,
+      IGenericRepository<Shift> repo,
+      BranchAccessService branchAccess,
+      TenantProvider tenantProvider,
+      CurrentUserService currentUser) : IShiftService
     {
         private readonly TenantDbContext _db = db;
         private readonly IGenericRepository<Shift> _repo = repo;
         private readonly BranchAccessService _branchAccess = branchAccess;
         private readonly TenantProvider _tenantProvider = tenantProvider;
+        private readonly CurrentUserService _currentUser = currentUser;
 
 
         // CREATE SHIFT
@@ -27,7 +29,18 @@ namespace ShiftService.Services.Implementation
         {
             try
             {
+                _currentUser.EnsureWriteAccess();
+
                 var tenantId = _tenantProvider.TenantId;
+
+                // Branch exists check
+                var branchExists = await _db.Branches
+                    .AnyAsync(b => b.BranchId == dto.BranchId);
+
+                if (!branchExists)
+                    return ApiResponseFactory.Failure<ShiftResponseDto>(
+                        "Invalid branch selected");
+
                 var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
 
                 if (!allowedBranches.Contains(dto.BranchId))
@@ -55,6 +68,7 @@ namespace ShiftService.Services.Implementation
 
                 var response = new ShiftResponseDto
                 {
+                    BranchId = dto.BranchId,
                     ShiftId = shift.ShiftId,
                     ShiftName = shift.ShiftName,
                     IsActive = shift.IsActive
@@ -112,6 +126,8 @@ namespace ShiftService.Services.Implementation
         {
             try
             {
+                _currentUser.EnsureWriteAccess();
+
                 var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
 
                 var shift = await _db.Shifts
@@ -161,6 +177,8 @@ namespace ShiftService.Services.Implementation
         {
             try
             {
+                _currentUser.EnsureWriteAccess();
+
                 var allowedBranches = await _branchAccess.GetAllowedBranchesAsync();
 
                 var shift = await _db.Shifts

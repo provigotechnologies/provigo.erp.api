@@ -9,14 +9,10 @@ using System.Threading.Tasks;
 namespace ProviGo.Common.Models
 {
     [Table("Customers")]
-    public class Customer
+    public class Customer : BaseEntity
     {
         [Key]
         public int CustomerId { get; set; }
-
-        [Required]
-        public Guid TenantId { get; set; }
-        public Guid BranchId { get; set; }
 
         [Required, MaxLength(100)]
         public string CustomerName { get; set; }
@@ -35,7 +31,6 @@ namespace ProviGo.Common.Models
         public string GSTIN { get; set; } = string.Empty;
 
         public DateTime JoinDate { get; set; } = DateTime.UtcNow;
-        public bool IsActive { get; set; }
 
         [ForeignKey(nameof(TenantId))]
         public TenantDetails TenantDetails { get; set; }
